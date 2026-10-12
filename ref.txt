@@ -1,0 +1,126 @@
+# CSI2011 Coursework I 开发文档参考文献推荐
+
+以下按类别整理适用于本课设开发文档的参考文献，均采用IEEE引用格式。**已为您通过搜索验证了关键文献的存在性和可获取性**，但建议最终提交前在Google Scholar或IEEE Xplore上核对版本号和页码。
+
+
+## 一、网络协议与TCP/IP基础
+
+本课设要求客户端与服务器通过**原始TCP套接字**通信，理解TCP可靠传输机制、连接生命周期以及应用层协议与传输层的关系是协议设计和文档论证的基础。
+
+[1] W. R. Stevens, *TCP/IP Illustrated, Volume 1: The Protocols*, 2nd ed. Boston, MA, USA: Addison-Wesley, 2011.
+
+> **适用章节**：系统架构、应用层协议设计。Stevens的经典著作系统讲解了TCP连接建立、数据传输、滑动窗口等机制，是理解原始套接字编程底层行为的权威参考。
+
+[2] J. F. Kurose and K. W. Ross, *Computer Networking: A Top-Down Approach*, 8th ed. Upper Saddle River, NJ, USA: Pearson, 2021.
+
+> **适用章节**：系统架构、协议设计、可靠性安全。该书采用自顶向下方法，从应用层协议设计切入讲解网络分层，与课设“团队自主设计应用层协议”的要求高度契合。
+
+[3] J. Postel, “Transmission Control Protocol,” RFC 793, IETF, Sep. 1981.
+
+> **适用章节**：协议设计、时序与并发。TCP的原始规范文档，定义了三次握手、连接终止、可靠字节流等核心机制。
+
+[4] W. Eddy, Ed., “Transmission Control Protocol (TCP),” RFC 9293, IETF, Aug. 2022.
+
+> **适用章节**：协议设计、时序与并发。RFC 9293整合了RFC 793发布以来的所有标准轨修订，是TCP当前最新规范，引用时应优先使用。
+
+[5] M. Allman, V. Paxson, and E. Blanton, “TCP Congestion Control,” RFC 5681, IETF, Sep. 2009.
+
+> **适用章节**：可靠性安全。定义了慢启动、拥塞避免、快速重传和快速恢复四个算法，可用于说明多客户端并发场景下TCP的流量控制行为。
+
+
+## 二、应用层协议设计
+
+课设要求团队设计并完整文档化应用层协议（帧定界、消息编目、请求/事件/错误模型）。以下文献可支撑协议设计方法论和帧定界决策的论证。
+
+[6] B. Hall, “Beej's Guide to Network Programming: Using Internet Sockets,” v3.3.2, 2024. [Online]. Available: https://beej.us/guide/bgnet/
+
+> **适用章节**：实现记录、协议设计。以教程形式讲解套接字编程中send/recv的边界问题、TCP粘包与分帧处理，直接对应课设中“接收方必须正确处理TCP分片和合并”的要求。
+
+[7] J. H. Saltzer, D. P. Reed, and D. D. Clark, “End-to-end arguments in system design,” *ACM Trans. Comput. Syst.*, vol. 2, no. 4, pp. 277–288, Nov. 1984.
+
+> **适用章节**：系统架构、协议设计。端到端原则是应用层协议设计的重要理论依据，可用于论证将答案验证、计分逻辑等放在服务端而非传输层的设计决策。
+
+
+## 三、Python 标准库与实现
+
+[8] Python Software Foundation, “socket — Low-level networking interface,” Python 3.12 Documentation. [Online]. Available: https://docs.python.org/3.12/library/socket.html
+
+> **适用章节**：实现记录、部署与操作。课设强制使用socket模块进行原始TCP通信，本文档是socket API的权威参考，涵盖bind、listen、accept、send、recv等核心方法。
+
+[9] Python Software Foundation, “threading — Thread-based parallelism,” Python 3.12 Documentation. [Online]. Available: https://docs.python.org/3.12/library/threading.html
+
+> **适用章节**：详细软件设计、时序与并发。threading模块用于实现多客户端并发处理，文档中Lock、Event、Condition等同步原语的说明直接对应课设“受保护的共享状态”要求。
+
+[10] Python Software Foundation, “json — JSON encoder and decoder,” Python 3.12 Documentation. [Online]. Available: https://docs.python.org/3.12/library/json.html
+
+> **适用章节**：数据设计、实现记录。用于加载和验证questions.json题库文件，以及协议消息的序列化/反序列化。
+
+[11] T. Bray, Ed., “The JavaScript Object Notation (JSON) Data Interchange Format,” RFC 8259, IETF, Dec. 2017.
+
+> **适用章节**：数据设计。题库文件和协议消息的JSON格式规范，定义了JSON的语法、编码和互操作指导。
+
+
+## 四、并发与同步
+
+[12] B. Nichols, D. Buttlar, and J. P. Farrell, *Pthreads Programming: A POSIX Standard for Better Multiprocessing*. Sebastopol, CA, USA: O'Reilly Media, 1996.
+
+> **适用章节**：详细软件设计、时序与并发。虽以Pthreads为例，但互斥锁、条件变量、竞态条件等概念与Python threading模型直接对应，可用于支撑并发设计的理论论述。
+
+[13] L. Sha, R. Rajkumar, and J. P. Lehoczky, “Priority inheritance protocols: An approach to real-time synchronization,” *IEEE Trans. Comput.*, vol. 39, no. 9, pp. 1175–1185, Sep. 1990.
+
+> **适用章节**：时序与并发。若开发文档涉及计时器管理和房间隔离中的优先级反转问题，可引用此文献。
+
+
+## 五、软件工程与需求分析
+
+[14] I. Sommerville, *Software Engineering*, 10th ed. Harlow, England: Pearson, 2015.
+
+> **适用章节**：需求分析、系统架构、详细软件设计、项目管理。软件工程权威教材，可支撑需求追踪矩阵、架构视图、模块职责划分等章节的方法论基础。
+
+[15] R. S. Pressman and B. R. Maxim, *Software Engineering: A Practitioner's Approach*, 9th ed. New York, NY, USA: McGraw-Hill, 2019.
+
+> **适用章节**：需求分析、项目管理。提供了需求工程、设计模式、项目管理的实用方法论，与课设“开发文档作为工程记录”的定位高度一致。
+
+[16] IEEE, “IEEE Recommended Practice for Software Requirements Specifications,” IEEE Std 830-1998, Oct. 1998.
+
+> **适用章节**：需求分析。定义了软件需求规格说明的内容和质量标准，可直接指导需求追踪矩阵的构建和需求条目的规范化书写。
+
+
+## 六、软件测试与验证
+
+[17] G. J. Myers, T. Badgett, and T. M. Thomas, *The Art of Software Testing*, 3rd ed. Hoboken, NJ, USA: Wiley, 2011.
+
+> **适用章节**：验证与验证。测试领域的经典著作，涵盖白盒/黑盒测试、边界值分析、等价类划分等方法，可直接指导课设中“畸形输入测试”“时序测试”“并发测试”的用例设计。
+
+[18] IEEE, “IEEE Standard for Software and System Test Documentation,” IEEE Std 829-2008, Jul. 2008.
+
+> **适用章节**：验证与验证。定义了测试计划、测试设计规格、测试用例规格等文档标准，可用于规范化测试证据的组织。
+
+
+## 七、系统安全
+
+[19] J. H. Saltzer and M. D. Schroeder, “The protection of information in computer systems,” *Proc. IEEE*, vol. 63, no. 9, pp. 1278–1308, Sep. 1975.
+
+> **适用章节**：可靠性安全。提出了最小权限、完全仲裁、经济机制等八项安全设计原则，可用于论证服务器端答案保密机制（答案不传输给客户端直至题目关闭）的设计合理性。
+
+
+## 八、实时系统与时序
+
+[20] P. A. Laplante and S. J. Ovaska, *Real-Time Systems Design and Analysis: Tools for the Practitioner*, 4th ed. Hoboken, NJ, USA: Wiley-IEEE Press, 2011.
+
+> **适用章节**：时序与并发。课设要求服务器控制题目顺序和计时，包含截止时间管理，该书提供了实时调度、时序分析和截止时间管理的系统方法。
+
+
+## 引用建议
+
+在开发文档中引用以上文献时，请注意以下几点：
+
+1. **RFC文档的引用**：优先引用RFC 9293（TCP最新规范），RFC 793可作为历史参考一并列出。引用格式中的获取日期可根据实际访问时间调整。
+
+2. **Python官方文档**：课设明确要求Python 3.12，引用时务必指定版本号，并标注“Accessed: [具体日期]”。
+
+3. **教材版本**：Kurose & Ross已更新至第8版（2021年），Sommerville已更新至第10版（2015年）。如果团队使用其他版本，请相应调整引用信息。
+
+4. **与开发文档章节的对应**：建议在每个引用后附上简短说明，指出该文献支撑了文档中的哪个具体设计决策或验证活动，这符合课设“每个声称的需求必须映射到设计元素和至少一个验证活动”的要求。
+
+5. **IEEE引用风格一致性**：确保所有引用均使用IEEE格式（作者缩写在前，书名/标题斜体，出版信息完整），并在正文中使用方括号数字标注（如 [1]、[2]），参考文献列表按引用顺序排列。
