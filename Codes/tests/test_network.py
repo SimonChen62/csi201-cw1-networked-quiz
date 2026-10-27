@@ -1,135 +1,89 @@
-"""Integration tests for A's raw TCP and JSON-lines server layer."""
+"""阶段 3：同一个 TCP 连接上连续发送多条消息。"""
 
-import json
-import socket
+import os
+from pathlib import Path
+import queue
+import subprocess
 import sys
 import threading
-import time
 import unittest
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-
-from protocol import JsonLineBuffer, encode_message  # noqa: E402
-from server import Server  # noqa: E402
 
 
-class NetworkTestCase(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls) -> None:
-        cls.server = Server("127.0.0.1", 0, Path(__file__).resolve().parents[1] / "questions.json")
-        cls.server_thread = threading.Thread(target=cls.server.start, daemon=True)
-        cls.server_thread.start()
-        deadline = time.monotonic() + 2
-        while cls.server.bound_address is None and time.monotonic() < deadline:
-            time.sleep(0.01)
-        if cls.server.bound_address is None:
-            raise AssertionError("server did not start")
+CODES = Path(__file__).resolve().parents[1]
 
-    @classmethod
-    def tearDownClass(cls) -> None:
-        cls.server.shutdown()
-        cls.server_thread.join(2)
 
-    def setUp(self) -> None:
-        if self.server.bound_address is None:
-            raise AssertionError("server did not bind")
-        self.connection = socket.create_connection(self.server.bound_address, timeout=2)
-        self.buffer = JsonLineBuffer()
-        self.pending_messages: list[dict] = []
+class EchoTest(unittest.TestCase):
+    def test_json_responses_and_malformed_message_error_share_connection(self):
+        environment = {**os.environ, "PYTHONUTF8": "1"}
+        with subprocess.Popen(
+            [sys.executable, "-u", str(CODES / "server.py"),
+             "--host", "127.0.0.1", "--port", "0"],
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            text=True, encoding="utf-8", env=environment,
+        ) as server:
+            try:
+                lines = queue.Queue()
+                threading.Thread(
+                    target=lambda: lines.put(server.stdout.readline()), daemon=True,
+                ).start()
+                try:
+                    ready = lines.get(timeout=5).strip()
+                except queue.Empty:
+                    self.fail("服务器没有在 5 秒内报告监听地址")
+                self.assertTrue(ready.startswith("LAB_LISTENING "), ready)
+                _, host, port = ready.split()
+                client = subprocess.run(
+                    [sys.executable, str(CODES / "tests" / "server_temp_test.py"),
+                     "--server", host, "--port", port,
+                     "--message", "first", "--message", "second",
+                     "--send-malformed"],
+                    capture_output=True, text=True, encoding="utf-8",
+                    env=environment, timeout=5,
+                )
+                self.assertEqual(client.returncode, 0, client.stderr)
+                self.assertIn('"request_id": 1', client.stdout)
+                self.assertIn('"request_id": 2', client.stdout)
+                self.assertIn('"code": "MALFORMED_MESSAGE"', client.stdout)
+                server.terminate()
+                server.wait(timeout=5)
+            finally:
+                if server.poll() is None:
+                    server.kill()
+                    server.wait(timeout=5)
 
-    def tearDown(self) -> None:
-        self.connection.close()
-
-    def send_raw(self, payload: bytes) -> None:
-        self.connection.sendall(payload)
-
-    def send_json(self, message: dict) -> None:
-        self.send_raw(encode_message(message))
-
-    def receive_one(self) -> dict:
-        while True:
-            if self.pending_messages:
-                return self.pending_messages.pop(0)
-            data = self.connection.recv(4096)
-            if not data:
-                raise AssertionError("server closed the connection")
-            messages = self.buffer.feed(data)
-            if messages:
-                self.pending_messages.extend(messages)
-
-    def test_hello_and_ping(self) -> None:
-        self.send_json({
-            "type": "hello",
-            "request_id": "hello-1",
-            "user_id": "alice",
-            "name": "Alice",
-        })
-        self.assertEqual(self.receive_one()["data"]["user_id"], "alice")
-
-        self.send_json({"type": "ping", "request_id": "ping-1"})
-        reply = self.receive_one()
-        self.assertTrue(reply["ok"])
-        self.assertEqual(reply["data"]["message"], "pong")
-
-    def test_fragmented_and_coalesced_json_lines(self) -> None:
-        first = encode_message({"type": "ping", "request_id": "one"})
-        second = encode_message({"type": "ping", "request_id": "two"})
-        split_at = max(1, len(first) // 2)
-        self.send_raw(first[:split_at])
-        self.send_raw(first[split_at:] + second)
-
-        replies = [self.receive_one(), self.receive_one()]
-        self.assertEqual({reply["request_id"] for reply in replies}, {"one", "two"})
-
-    def test_duplicate_active_user_id_is_rejected(self) -> None:
-        self.send_json({
-            "type": "hello",
-            "request_id": "first",
-            "user_id": "same-id",
-            "name": "First",
-        })
-        self.assertTrue(self.receive_one()["ok"])
-
-        second = socket.create_connection(self.server.bound_address, timeout=2)
-        try:
-            second.sendall(encode_message({
-                "type": "hello",
-                "request_id": "second",
-                "user_id": "same-id",
-                "name": "Second",
-            }))
-            buffer = JsonLineBuffer()
-            reply = buffer.feed(second.recv(4096))[0]
-            self.assertFalse(reply["ok"])
-            self.assertEqual(reply["error"]["code"], "DUPLICATE_USER_ID")
-        finally:
-            second.close()
-
-    def test_bad_json_and_unknown_command_return_errors(self) -> None:
-        self.send_raw(b"not-json\n")
-        self.assertFalse(self.receive_one()["ok"])
-
-        old_connection = self.connection
-        self.connection = socket.create_connection(self.server.bound_address, timeout=2)
-        old_connection.close()
-        self.buffer = JsonLineBuffer()
-        self.send_json({"type": "not-a-command", "request_id": "unknown"})
-        reply = self.receive_one()
-        self.assertFalse(reply["ok"])
-        self.assertEqual(reply["error"]["code"], "UNKNOWN_COMMAND")
-
-    def test_two_clients_have_independent_connections(self) -> None:
-        other = socket.create_connection(self.server.bound_address, timeout=2)
-        try:
-            self.send_json({"type": "ping", "request_id": "client-one"})
-            other.sendall(encode_message({"type": "ping", "request_id": "client-two"}))
-            self.assertEqual(self.receive_one()["request_id"], "client-one")
-            other_buffer = JsonLineBuffer()
-            other_reply = other_buffer.feed(other.recv(4096))[0]
-            self.assertEqual(other_reply["request_id"], "client-two")
-        finally:
-            other.close()
+    def test_two_clients_receive_their_own_responses(self):
+        environment = {**os.environ, "PYTHONUTF8": "1"}
+        with subprocess.Popen(
+            [sys.executable, "-u", str(CODES / "server.py"),
+             "--host", "127.0.0.1", "--port", "0"],
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            text=True, encoding="utf-8", env=environment,
+        ) as server:
+            try:
+                ready = server.stdout.readline().strip()
+                self.assertTrue(ready.startswith("LAB_LISTENING "), ready)
+                _, host, port = ready.split()
+                clients = [
+                    subprocess.Popen(
+                        [sys.executable, str(CODES / "tests" / "server_temp_test.py"),
+                         "--server", host, "--port", port,
+                         "--message", text],
+                        stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                        text=True, encoding="utf-8", env=environment,
+                    )
+                    for text in ("client one", "client two")
+                ]
+                outputs = []
+                for client in clients:
+                    output, error = client.communicate(timeout=5)
+                    self.assertEqual(client.returncode, 0, error)
+                    outputs.append(output)
+                self.assertIn('"text": "client one"', outputs[0])
+                self.assertIn('"text": "client two"', outputs[1])
+            finally:
+                if server.poll() is None:
+                    server.terminate()
+                    server.wait(timeout=5)
 
 
 if __name__ == "__main__":

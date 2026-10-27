@@ -1,26 +1,11 @@
-# A network tests
+# 成员 A 当前测试
 
-`server_temp_test.py` is only a small manual client for testing A's server and protocol.
-It is not the assessed `client.py`. D/E will create the final client later.
+`server_temp_test.py` 是 A 的临时客户端：连接后发送一条或多条换行消息，逐条接收回复，随后退出；不替代 D/E 的正式客户端。
 
-`test_network.py` is an automated test for A's Lab 4 TCP work. It starts the real
-server on an ephemeral local port and checks the observable network behaviour:
+`test_protocol.py` 检查 JSON/UTF-8 编解码、拆分/合并帧提取、错误 JSON/非对象内容和超过 64 KiB 的帧。
 
-- the `hello` and `ping` request/reply flow;
-- one JSON message split across multiple `recv()` calls;
-- multiple JSON messages received in one `recv()` call;
-- duplicate active user IDs;
-- malformed JSON and unknown commands;
-- two clients using independent TCP connections.
+`test_network.py` 使用真实 TCP 连接启动服务器和临时客户端，检查同一连接上的多条 JSON 请求、成功响应与格式错误响应，带超时及进程清理。运行方式见上一级中文 README。
 
-Run it from `Codes/`:
+其中一个测试还会同时启动两个客户端，确认两个连接各自收到自己的响应。
 
-```bash
-python -m unittest discover -s tests -p "test_*.py" -v
-```
-
-Run from the repository root with the `Codes/` path:
-
-```bash
-python Codes/tests/server_temp_test.py --id zhangsan123 --name "Zhang San"
-```
+登录、业务分发和多客户端测试之后按阶段重新加入。当前测试不证明完整作业要求已实现。
