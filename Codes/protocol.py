@@ -1,11 +1,11 @@
-r'''
+r"""
 Author: SimonChen62 430395359@qq.com
 Date: 2026-10-27 01:28:20
 LastEditors: SimonChen62 430395359@qq.com
 LastEditTime: 2026-10-27 22:17:14
 FilePath: \Codes\protocol.py
-Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
-'''
+Description: JSON message encoding, decoding and newline framing.
+"""
 
 
 import json
@@ -15,20 +15,26 @@ MAX_MESSAGE_BYTES = 64 * 1024
 
 
 class ProtocolError(ValueError):
-    """not utf-8 json format"""
+    """Invalid protocol message, including UTF-8 or JSON errors."""
 
-# messgaetoolagr extends protocal
+
+# MessageTooLarge inherits from ProtocolError.
 class MessageTooLarge(ProtocolError):
-    """number of bytes exceed restriction"""
+    """Message size exceeds the byte limit."""
 
-# description: a func to split the message according to b'\n', and keep the remaining part, one message should not >= 64kb
-# keep the remaining part in original buffer
-# param {bytearray} buffer
-# return {*}
+
 def extract_messages(buffer: bytearray) -> list[bytes]:
+    r"""Split complete frames at b'\n', keeping each frame within 64 KiB.
+
+    Args:
+        buffer: Receive buffer, modified in place; an incomplete tail is kept.
+
+    Returns:
+        Complete frames without their newline delimiters.
+    """
     messages = []
     while True:
-        # find split position
+        # Find the frame delimiter.
         newline = buffer.find(b"\n")
         if newline == -1:
             if len(buffer) > MAX_MESSAGE_BYTES:
@@ -39,15 +45,18 @@ def extract_messages(buffer: bytearray) -> list[bytes]:
         messages.append(bytes(buffer[:newline]))
         del buffer[:newline + 1]
 
-'''
-description: get the error dic info, transfer to json
-param {dict} message
-param {*} object
-return {*}
-'''
+
 def encode_message(message: dict[str, object]) -> bytes:
+    """Encode a message dictionary as UTF-8 JSON followed by a newline.
+
+    Args:
+        message: The message dictionary to encode.
+
+    Returns:
+        The encoded frame as bytes.
+    """
     try:
-        # turn to json, payload cont
+        # Convert the dictionary to JSON, then encode it as UTF-8.
         payload = json.dumps(
             message,
             ensure_ascii=False,
@@ -61,12 +70,15 @@ def encode_message(message: dict[str, object]) -> bytes:
     return payload + b"\n"
 
 
-'''
-description: successfully get, decode, json to dict
-param {bytes} payload
-return {*}
-'''
 def decode_message(payload: bytes) -> dict[str, object]:
+    """Decode a UTF-8 JSON frame into a dictionary.
+
+    Args:
+        payload: The frame bytes to decode.
+
+    Returns:
+        The decoded message dictionary.
+    """
     if len(payload) > MAX_MESSAGE_BYTES:
         raise MessageTooLarge("message exceeds 64 KB")
     try:
