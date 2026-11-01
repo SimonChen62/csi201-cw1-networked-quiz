@@ -1,461 +1,306 @@
-# 成员 A：从 TCP 基础逐步建立服务器
+# 成员 A：完成内容、API 与组员接入说明
 
-当前进度：**阶段 6，连接登记、断线清理和可控关闭**。这仍不是最终可提交的服务器。
+本文说明 A 提供的服务端网络层、各角色如何调用，以及当前尚未完成的联调事项。以当前 `server.py`、`protocol.py` 为准；分工依据是项目根目录的《CW1_系统流程与五人分工计划.md》。
 
-代码由 Codex 分阶段生成，再逐段讲解；你不用手写。每一阶段都按「目标 → 代码 → 运行结果 → 读懂流程」推进。
+**当前是供全组接入的开发版本。** 网络基础已实现，默认请求处理仍为 `echo`。B/C 的服务端模块和 D/E 的客户端模块目前是占位文件。本机共 29 项测试通过；工作区已有 [2026-11-01 Docker 验证记录](../docs/evidence/2026-11-01-docker-evidence.md) 及其 [完整测试输出](../docs/evidence/2026-11-01-docker-unittest.txt)，记录同样为 29 项通过，但正式启动仍因缺少题库加载函数而失败。本次 README 更新没有重跑 Docker。
 
-## 现在看哪些文件
+## 1. A 已实现的内容
 
-| 文件 | 用途 | 现在是否要读 |
+| 内容 | 当前实现 |
+| --- | --- |
+| TCP 接入 | 原生 `socket`，绑定指定地址和端口，持续 `accept()` |
+| 多客户端 | 每个连接一个接收线程，分别保存接收缓冲区；已有 10 条同时连接的真实 TCP 测试 |
+| 消息边界 | UTF-8 JSON，每条消息以换行结束；支持拆分、合并和不完整尾部保留 |
+| 消息大小 | JSON 内容最多 64 KiB，不含末尾换行 |
+| 发送 | `ClientSession.send()` 编码并发送；每连接独立发送锁，防止回复和事件交错写入 |
+| 请求交接 | 已解码的字典与来源 session 一起传给可替换的 `request_handler` |
+| 事件与广播 | 单连接 `send_event()`；`broadcast_event()` 向业务提供的名单逐个发送 |
+| 错误路径 | 常见坏 JSON、非对象消息和超长帧处理；发送编码错误与网络错误分开处理 |
+| 断线清理 | 关闭 socket、移除活动连接，通过 `on_disconnect` 通知业务层 |
+| 停止与线程收尾 | Ctrl+C 设置停止标志，主流程关闭连接并 `join()` 已记录的客户端线程 |
+| 启动交接 | `--host`、`--port` 必填；正式模式用 `--questions`，在监听前调用题库加载接口 |
+
+A 不负责题库完整 schema 校验、登录和房间业务、计时判分、排行榜或正式客户端。下面示例中的业务命令、事件名和数据字段，需要由对应成员与客户端协商，不表示这些业务已经实现。
+
+## 2. 各角色从哪里接入
+
+| 角色 | 自己负责 | 与 A 对接的位置 |
 | --- | --- | --- |
-| `server.py` | A 的服务器入口，解析 JSON 请求并返回成功/错误响应 | 是 |
-| `tests/server_temp_test.py` | A 自测用的临时 JSON 客户端，不是正式客户端 | 是 |
-| `protocol.py` | JSON 编解码、换行分帧和 64 KiB 单消息限制 | 是 |
-| `tests/test_protocol.py` | 测协议边界与错误输入 | 看不懂测试时再看 |
-| `tests/test_network.py` | 自动启动服务器和临时客户端，验证真实 TCP 交互 | 由 Codex 维护 |
-| `server_modules/` | B 的题库、房间模块，以及 C 的比赛模块 | 集成时再看 |
-| `client_modules/` | D/E 的正式客户端模块 | 由对应成员负责 |
-| `questions.json` | 题库数据 | 保留，后续接入 B 的校验 |
+| B | 题库校验、用户、房间、大厅、ready、host | 提供 `load_question_bank(path)`；业务请求通过 `request_handler(session, message)` 交接；断线时清理身份和房间 |
+| C | 比赛线程、发题、计时、答案、分数和排行榜 | 请求处理器把比赛命令交给 C；C 用 `send_event()` / `broadcast_event()` 发布公开数据；断线回调更新比赛状态 |
+| D | 正式客户端网络、接收线程、客户端状态 | 复用 `protocol.py`；区分 `response`、`error`、`event`，用 `request_id` 匹配回复 |
+| E | CLI 和整体组装 | 通过 D 的接口收发、显示信息；在服务端入口把 B/C 的处理函数传入 `Server`，保留校验后监听和关闭流程 |
 
-`Codes/Dockerfile` 和 `Codes/docker-compose.yml` 是旧骨架配置，当前教学不使用。老师提供的 `CSI201_CW1_Docker_Env` 文件夹保留原位。下面直接使用已经构建好的 `csi201-cw1:latest` 镜像，并把 Codes 挂载进去，不需要复制代码。
+`Server.sessions` 是 **ClientSession 对象的集合**，用于网络管理，不是按用户 ID 索引的身份表。B 应自行维护用户 ID、显示名、所在房间与连接对象的对应关系。当前 `ClientSession` 只有连接、地址、发送锁和关闭状态，没有预置 `user_id`、`name`、`current_room_id` 字段。
 
-## 分阶段目标
+## 3. 公共消息格式（D/E 与 B/C 共用）
 
-1. **基础已完成：**连接、短文字收发和 socket 创建。
-2. **基础已完成：**循环接收，理解发送结束和 TCP 半关闭。
-3. **基础已完成：**换行分帧，在同一连接上往返多条文本消息。
-4. **当前阶段：**将每行解析为 JSON 对象，编码成功/错误响应；拒绝格式错误与超过 64 KiB 的消息。
-5. **基础已完成：**主线程持续 accept 并为每个客户端创建处理线程；各连接缓冲区独立。
-6. **当前阶段：**登记活动连接，处理客户端 EOF/网络异常，并通过停止事件和 Ctrl+C 关闭监听与连接。
-7. **消息分发：**把请求交给 B 的题库/大厅逻辑或 C 的比赛逻辑；用 A 的发送接口返回响应或传递异步事件/广播。
-8. **正式启动与关闭：**支持作业要求的 `--host`、`--port`、`--questions`；让 B 完整校验题库，通过后再监听并打印 `SERVER_READY`；处理 Ctrl+C。
-9. **整体验证：**在老师 Docker 环境测试 A 的网络边界；全组验证至少 10 个客户端和 2 个互不影响的房间。
+编码为 UTF-8，每条 JSON 对象后加一个 `\n`。不要假定一次 `recv()` 就等于一条消息。`request_id` 在同一连接的待处理请求中应能唯一匹配；不同连接可以使用相同编号。
 
-每次只完成当前一个小目标，后续阶段还没有实现。
+建议全组统一使用递增整数或非空字符串作为 `request_id`。当前 A 只通过 `message.get("request_id")` 取值，并不强制编号的类型或必填性；正式命令的字段验证由业务处理器补充，D/E 按约定发送。
 
-## 成员 A 的最终交付清单
+| 类别 | 格式示例 | 处理方式 |
+| --- | --- | --- |
+| 当前可用请求 | `{"type":"echo","request_id":1,"text":"hello"}` | 默认服务器只实现此教学命令 |
+| 成功回复 | `{"type":"response","request_id":1,"ok":true,"data":{"text":"hello"}}` | 对应一条请求 |
+| 错误回复 | `{"type":"error","request_id":1,"error":{"code":"UNKNOWN_COMMAND","message":"unknown"}}` | 对应失败请求；无法识别请求编号时为 `null` |
+| 主动事件 | `{"type":"event","event":"room_updated","data":{"room_id":"R1"}}` | 不带请求编号，不计作某次请求的回复 |
 
-下面是 A 最终负责的网络功能，不代表当前阶段已经完成。正式服务器启动命令必须是：
+`hello`、`list_quizzes`、`join_room`、`answer`、`question_open` 等是待业务层接入的名称。默认处理器遇到非 `echo` 命令会返回 `UNKNOWN_COMMAND`；上表的 `room_updated` 用于说明事件封装。
 
-```bash
-python3 server.py --host <server_IP> --port <port> --questions <json_path>
+`error_response(request_id, code, message)` 在 `server.py` 中，返回上述错误字典，不发送消息。`code` 和 `message` 建议使用字符串；请求编号无法可靠取得时传 `None`。
+
+当前网络层使用 `MALFORMED_MESSAGE`、`MESSAGE_TOO_LARGE`，默认 echo 处理器使用 `UNKNOWN_COMMAND`、`INVALID_MESSAGE`。回复编码失败会尝试发送编号为 `null` 的 `INTERNAL_ERROR`。业务错误码仍需 B/C 与 D/E 统一；D 对编号为 `null` 的错误应显示或记录，不能随意匹配到某条待处理请求。
+
+## 4. B：题库加载接口
+
+B 在 `server_modules/question_bank.py` 中提供：
+
+```python
+# 接口约定，当前占位文件尚未实现。
+def load_question_bank(path):
+    """读取并完整验证题库；成功返回非 None 的内存对象，失败抛出异常。"""
+    raise NotImplementedError("由 B 实现完整题库校验")
 ```
 
-- `server.py`：解析三个启动参数；在创建监听 socket 前调用 B 的完整题库校验；仅校验通过后创建 TCP socket、绑定用户提供的端口并监听；开始监听后打印 `SERVER_READY`；持续接受新连接并为每个客户端启动处理线程。
-- `protocol.py`：编码 JSON 消息为 UTF-8 换行帧；从字节流缓冲区提取所有完整消息，保留不完整尾部；兼容一条消息分多次 `recv()`、多条消息一次收到的情况。
-- 每连接传输：线程循环接收、解帧、解码并把完整请求交给 B/C；处理错误 JSON、无效命令、EOF 和 socket 异常；用发送接口把响应、异步事件和业务层发起的广播送到正确客户端；用锁防止多个线程同时写乱同一个 socket。
-- 网络生命周期：停止接受新连接，关闭连接 socket 和监听 socket，处理 Ctrl+C；断线时通知 B/C 清理各自拥有的用户/房间/比赛状态。A 清理网络资源，不接管 B/C 的业务状态。
-- A 的证据：测试协议与 TCP 边界（拆分/合并、错误消息、多连接、断线和清理），参与老师 Docker 镜像中的完整集成测试，并撰写实际协议格式和示例供开发文档使用。
+| 项目 | 约定 |
+| --- | --- |
+| 输入 `path` | `str`，来自服务器启动参数 `--questions`；可以传给 `pathlib.Path` |
+| 成功返回 | 非 `None` 的已验证题库对象；具体结构由 B 与 C 约定，A 保存为 `server.question_bank` |
+| 失败 | 文件问题抛出 `OSError` 或其子类；数据/格式问题统一抛出 `ValueError` 或其子类，附明确诊断 |
+| A 的处理 | 在 `main()` 创建 `Server` 前调用；捕获 `ImportError`、`OSError`、`ValueError`，打印错误并返回退出码 1 |
+| 监听时机 | 验证成功后才调用 `serve_forever()` 创建 socket、绑定并监听，再打印 `SERVER_READY <host> <port>` |
 
-职责边界：B 负责题库文件、完整 schema 校验、用户/大厅/房间业务；C 负责比赛线程、计时、答题和评分；D/E 负责客户端。A 负责连接、消息边界、收发和分发，不重写这些业务逻辑。服务器不得在题目关闭前发送正确答案；全组需验证至少 10 个连接客户端和 2 个独立房间，A 为其提供网络并发支持。
+不要把示例中的 `NotImplementedError` 当作正式实现：A 的入口没有将它转换成题库校验错误。B 应实现作业文档规定的全部规则，包括文件大小、schema、字段类型与范围、ID 唯一性等。
 
-分工依据：以《CW1_系统流程与五人任务分配计划.md》的详细分工及作业 PDF 为准。《CW1_团队公告与分工计划.md》是较早建议，其中成员 C/D/E 的职责与后续详细分工不一致；本学习路线不按那份旧建议分配。
+**只有服务器读取题库。** 文件路径不由客户端发送。A 不会再次验证返回对象的完整 schema，因此加载函数必须负责完整校验。题库对象不会因传给 `Server` 就自动接入大厅和比赛；业务处理器仍需持有或访问它。
 
-## 第一课：先看结果
+## 5. B/C：请求处理接口
 
-在 PowerShell 窗口 1 执行：
+创建服务器时传入统一处理函数：
+
+```python
+Server(host, port, request_handler=None, on_disconnect=None, question_bank=None)
+```
+
+| 参数 | 类型及含义 |
+| --- | --- |
+| `host` | `str`，服务端绑定地址 |
+| `port` | `int`，服务端绑定端口 |
+| `request_handler` | 可调用对象，接收 `(session, message)`；省略时使用内置 echo 处理器 |
+| `on_disconnect` | 可调用对象，接收 `(session)`；省略时不执行业务清理 |
+| `question_bank` | B 验证后的对象；传入非 `None` 对象时监听成功输出 `SERVER_READY`，否则输出 `LAB_LISTENING` |
+
+`request_handler(session, message)` 的约定：
+
+- `session` 是来源连接的 `ClientSession`，用于关联身份、获取地址或发送主动事件。
+- `message` 是解码后的 Python `dict`。A 已处理 TCP 分帧与 JSON 解码，不需要再 `recv()` 或 `json.loads()`。
+- 返回一个成功或错误回复字典。A 随后调用 `session.send(response)` 发送；**处理器不要再发送同一条普通回复**，否则客户端会收到两份。
+- 当前接口不支持通过返回 `None` 表示“我已自行回复”。每次调用都应返回一个合法回复对象。
+- 成功回复至少按第 3 节提供 `type`、`request_id`、`ok`、`data`；错误回复提供 `type`、`request_id` 和含 `code/message` 的 `error`。A 不会自动补齐或检查业务回复结构，能 JSON 编码也不代表字段正确。
+- 函数在该客户端的接收线程中运行；不同客户端会并发调用它。共享用户/房间状态由 B/C 使用自己的锁保护。
+- `hello`、大厅命令和比赛命令的路由由这个统一处理函数组织，不是分别给 `Server` 传两个 request handler。
+- 业务预期错误应返回 `error_response(...)`；当前 `process_frame()` 不会统一捕获业务函数抛出的任意异常，异常会使该客户端线程进入清理流程。
+- 启动比赛时创建/通知 C 的比赛线程后尽快返回，不要让接收线程等待整场比赛，否则此连接无法继续处理答题请求。
+
+### 可运行的回调接入示例
+
+下面只演示 API 装配，新增 `ping` 处理并保留 echo；没有实现用户、房间或比赛。可保存为 `Codes/integration_demo.py` 再运行，该文件目前未随本文新增。
+
+```python
+import signal
+
+from server import Server
+
+
+def route_request(session, message):
+    if message.get("type") == "ping":
+        return {
+            "type": "response",
+            "request_id": message.get("request_id"),
+            "ok": True,
+            "data": {"message": "pong"},
+        }
+    return Server.handle_request(session, message)
+
+
+def player_disconnected(session):
+    print(f"业务收到断线通知：{session.address}", flush=True)
+    # 接入 B 的身份/房间清理，以及 C 的比赛玩家状态更新。
+
+
+if __name__ == "__main__":
+    server = Server(
+        "127.0.0.1",
+        5000,
+        request_handler=route_request,
+        on_disconnect=player_disconnected,
+    )
+    signal.signal(signal.SIGINT, server.request_shutdown)
+    try:
+        server.serve_forever()
+    finally:
+        server.shutdown()
+```
+
+此示例未加载题库，因此是网络联调示例，输出 `LAB_LISTENING`。保存后可以用现有临时客户端测试 echo，并在它退出时看到业务回调日志。
+
+**正式接入位置：**当前 `server.py` 的 `main()` 已会调用题库加载器，但仍只用 `Server(args.host, args.port, question_bank=question_bank)` 创建服务器。仅在 B/C 文件中定义函数不会自动接入；E/A 需要在该创建语句中显式传入实际的 `request_handler` 和 `on_disconnect`，同时让业务处理器获得 B 的题库对象。保留原有参数解析、题库失败退出和 `try/finally` 关闭流程，按作业命令启动。
+
+## 6. B/C：发送事件与房间广播
+
+### 单连接发送
+
+| 函数 | 参数 | 返回及用途 |
+| --- | --- | --- |
+| `session.send(message)` | JSON 可编码的消息字典 | `bool`；发送完整消息，通常由 A 用于普通回复 |
+| `session.send_event(event, data)` | `event: str` 为事件名；`data` 建议为可 JSON 编码的字典 | `bool`；自动包装为 `type=event`，用于主动通知 |
+| `session.close()` | 无 | 无返回值；重复调用可安全返回，关闭读写及 socket；不要直接修改 A 的连接集合 |
+| `server.broadcast_event(targets, event, data)` | `targets` 为稳定的 session 名单；其余同上 | 返回发送失败的 session 列表，全部成功返回 `[]` |
+
+业务代码拿到目标 session 后可发送：
+
+```python
+# 片段：session 是业务层保存的目标连接。
+sent = session.send_event("room_updated", {"room_id": "R1"})
+```
+
+`send()` 和 `send_event()` 都经过每连接发送锁；B/C 不要直接使用 `session.connection.sendall()` 绕过它。成功表示 `sendall()` 完成，不表示客户端业务层已经读取或确认。
+
+### 只给本房间广播
+
+```python
+# 片段：room_lock 和 room_sessions 由 B/C 的房间状态持有。
+with room_lock:
+    targets = list(room_sessions)
+    data = {"room_id": room_id}
+
+# 已释放房间锁，才开始网络发送。
+failed = server.broadcast_event(targets, "room_updated", data)
+```
+
+`room_sessions` 应当保存此房间的 `ClientSession`，不是用户 ID 字符串。不要把全体 `server.sessions` 当作某个房间的名单。`room_lock`、`room_sessions`、`room_id` 都是业务层示意变量，A 没有提供这些房间字段。
+
+C 组装 `question_open` 数据时，只发送公开题目、选项等；正确答案必须等题目关闭后再加入事件。A 的发送函数不会自动过滤答案。传入的数据应当是已构造好的稳定快照，广播期间不要再由其他线程修改；也不要在持有房间锁或 A 的集合锁时发送网络消息。
+
+### 失败名单如何处理
+
+- 编码失败：`send()` 记录错误并返回 `False`，保留连接。这通常是事件数据不能 JSON 编码或超过大小限制，业务层需修正数据。
+- 网络发送错误：`send()` 关闭 session 并返回 `False`；接收线程退出后统一移除连接、调用 `on_disconnect`。
+- 已关闭的 session：返回 `False`。`session.closed.is_set()` 为 True 表示正在关闭或已关闭。
+- 因此 `failed` 是发送失败报告，可能包含编码问题，**不能把名单中的每个人都认定为断线玩家**。无需再逐个关闭或重复清理用户；业务清理统一交给断线回调。
+- 当前广播是顺序发送，慢读者仍可能阻塞本次广播。发送锁只保证帧不交错，不保证多个线程之间的业务发送先后顺序。
+
+## 7. B/C：断线回调与生命周期
+
+`on_disconnect(session)` 在 A 关闭 socket、从活动连接集合移除 session 后，由该连接的接收线程调用。A 不持有 `sessions_lock` 执行业务回调；返回值被忽略。
+
+B 根据自己的映射删除用户、房间成员并处理 host；C 按比赛规则更新活动玩家、答案或缺席状态。不要在回调中再次启动整台服务器的 `shutdown()`；回调应尽快完成，尤其不能无限等待比赛线程或客户端输入。
+
+A 对已登记的连接执行一次回调；业务侧仍应容忍玩家已主动离开房间等情况。回调抛出的 `Exception` 会被记录，网络连接已移除，但业务清理失败不会自动重试。
+
+| 生命周期函数 | 调用方及作用 |
+| --- | --- |
+| `server.serve_forever()` | 服务端主线程；创建监听 socket，接入连接并开启处理线程；阻塞运行 |
+| `server.request_shutdown(*_)` | SIGINT 处理函数；只设置 `stop_event`，不执行完整关闭 |
+| `server.shutdown()` | 主线程从监听循环退出后的 `finally`；关闭监听和连接，等待已记录的客户端线程 |
+| `server.start_client(session)`、`handle_client(session)`、`process_frame(session, frame)` | A 的内部接入/接收路径；B/C 通常不用直接调用 |
+
+当前 `shutdown()` 会等待客户端线程与回调；回调若永久阻塞，关闭也可能一直等待。C 自己创建的 GameThread 不在 A 的 `client_threads` 集合中，仍需 C 提供停止和等待机制。当前也尚未自动发送 `server_shutdown` 事件；D 应处理 EOF/网络异常，正式关闭通知和比赛线程停止需联调补齐。
+
+## 8. D/E：协议函数与客户端使用方法
+
+`protocol.py` 可在客户端进程中导入，不会读取题库或启动服务器。
+
+| 函数/对象 | 输入 | 输出/行为 |
+| --- | --- | --- |
+| `encode_message(message)` | 消息 `dict` | UTF-8 JSON 的 `bytes`，已包含末尾 `b"\n"`；不要重复加换行 |
+| `extract_messages(buffer)` | 此连接自己的 `bytearray` | 返回完整帧 `list[bytes]`，已去掉换行；原地删除已取出内容，保留不完整尾部 |
+| `decode_message(payload)` | 单帧 `bytes` | 返回 Python `dict`，非对象 JSON 会被拒绝 |
+| `ProtocolError` | 协议异常类，继承 `ValueError` | 编码/解码的预期错误可捕获此类 |
+| `MessageTooLarge` | 继承 `ProtocolError` | 单帧内容超过 64 KiB |
+
+客户端发送片段：
+
+```python
+# connection 为 D 已建立的 socket。
+from protocol import encode_message
+
+connection.sendall(encode_message({
+    "type": "echo", "request_id": 1, "text": "hello",
+}))
+```
+
+客户端接收顺序：`recv()` → 加入本连接 `bytearray` → `extract_messages()` → 对每帧 `decode_message()`。只有一个 reader thread 读取同一 socket；不要在用户发起每次请求时再开一个接收者与它竞争。
+
+如果 D 的多个线程都可能发送请求，也应在客户端为该 socket 提供一把发送锁，保护一次完整的 `sendall(encode_message(request))`。`protocol.py` 只编解码，没有内置发送锁；服务端的 `session.send_lock` 不保护客户端进程的写入。
+
+D 按 `message["type"]` 区分回复与事件：`response/error` 用 `request_id` 匹配待处理请求，`event` 按 `event` 字段更新状态并通知 E。事件不能算作某条请求的回复。`recv()` 返回空 bytes 时处理服务器关闭。E 通过 D 的客户端接口显示菜单、题目和结果，不能调用服务端进程中的 `session.send_event()`。
+
+`tests/server_temp_test.py` 只发 echo、显示消息、等预期回复数量后退出，不是正式客户端，也没有长期事件循环或完整请求编号匹配表。
+
+## 9. 当前运行与测试
+
+### 本机快速检查（开发调试）
+
+从项目根目录开启两个 PowerShell 窗口。窗口一：
 
 ```powershell
-docker run --rm --name cw1-a-stage1 --mount "type=bind,source=D:\Y3\csi201\cw1\Codes,target=/code" csi201-cw1:latest server.py
+python Codes/server.py --host 127.0.0.1 --port 5000 --lab-mode
 ```
 
-看到 `LAB_LISTENING 127.0.0.1 5000` 后，窗口停在那里是正常的：服务器在等客户端。
-
-打开 PowerShell 窗口 2，执行：
+窗口二：
 
 ```powershell
-docker exec cw1-a-stage1 python tests/server_temp_test.py
+python Codes/tests/server_temp_test.py --message "hello" --message "second" --send-malformed
 ```
 
-这会在同一个容器里启动临时客户端，因此它能用 127.0.0.1 连接服务器，不需要端口映射。预期看到：
+预期两条成功回复和一条 `MALFORMED_MESSAGE`；客户端退出后服务器仍监听，可再连一次。在服务端窗口按 Ctrl+C 请求关闭。
 
-```text
-发出请求：{'type': 'echo', 'request_id': 1, 'text': 'hello server'}
-收到响应：{"type": "response", "request_id": 1, "ok": true, "data": {"text": "hello server"}}
-发出请求：{'type': 'echo', 'request_id': 2, 'text': 'second message'}
-收到响应：{"type": "response", "request_id": 2, "ok": true, "data": {"text": "second message"}}
+### 老师 Docker 环境
+
+先启动 Docker Desktop，并确认已用老师提供的 Dockerfile 构建本机镜像 `csi201-cw1:latest`。该标签是本机名称，其他组员需先准备同一老师环境。以下挂载路径按自己的仓库位置调整。
+
+窗口一：
+
+```powershell
+docker run --rm -it --name cw1-a-test --mount "type=bind,source=D:\Y3\csi201\cw1\Codes,target=/code" csi201-cw1:latest server.py --host 127.0.0.1 --port 5000 --lab-mode
 ```
 
-当前多客户端服务器在客户端退出后继续监听。可以再次执行窗口 2 的命令接入一个新客户端；在窗口 1 按 Ctrl+C 才会关闭服务器，随后 `--rm` 会删除该容器。
+窗口二：
 
-## 第一课：代码按什么顺序执行
-
-先只看 `server.py`。文件末尾的 `if __name__ == "__main__": main()` 表示直接运行这个文件时进入 main。main 开头的 argparse 读取运行参数；没有额外参数时，使用地址 127.0.0.1、端口 5000。
-
-核心顺序是：
-
-```text
-socket 创建通信端点
-  → bind 绑定自己的地址和端口
-  → listen 开始监听
-  → accept 等待并接入一个客户端
-  → connection.recv 接收客户端字节
-  → connection.sendall 把这些字节发回去
-  → 离开 with，关闭连接和监听 socket
+```powershell
+docker exec cw1-a-test python tests/server_temp_test.py --message "hello" --message "second" --send-malformed
 ```
 
-第一段先理解这三行：
+这两个进程运行在同一容器，用容器内回环地址通信，不需要端口映射。命令按当前本机镜像以 Python 为 ENTRYPOINT 的方式编写；不要在 `docker run` 的镜像名后重复加 `python`。
 
-```python
-with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
-    server.bind((args.host, args.port))
-    server.listen(1)
-```
-
-- `socket.AF_INET`：使用 IPv4 地址，例如 127.0.0.1。
-- `socket.SOCK_STREAM`：这里创建使用 TCP 的流式 socket。
-- `as server`：把创建出的 socket 取名叫 server。
-- `with`：退出这一层缩进时自动关闭 socket，省去手动 close。
-- `bind((args.host, args.port))`：把这个 socket 绑定到指定地址和端口；双括号内层是 `(地址, 端口)` 元组。
-- `listen(1)`：开始监听，参数是等待 accept 的连接队列长度提示，不能理解成最多只允许一个用户。本课只有一个用户，是因为只调用了一次 accept。
-
-127.0.0.1 表示当前网络环境自身；本实验里它指同一个 Docker 容器。5000 是这个程序使用的端口，帮助系统把连接交给正确的程序。
-
-下一段再看：
-
-```python
-connection, address = server.accept()
-```
-
-accept 在没有连接时会等待。连接到达后返回两个值：connection 是与这个客户端通信的新 socket；address 是客户端地址。server 仍是监听 socket，实际收发使用 connection。
-
-最后的 recv 返回 bytes，不是 Python 字符串。临时客户端用 encode 把文字转成字节，服务器原样发送，客户端再用 decode 转回文字。`data!r` 让终端展示字节的表示形式，例如 `b'hello server'`。
-
-## 第一阶段回顾
-
-服务端当时只执行一次 `recv(1024)`，读到多少就回复多少；1024 是本次读取的最大字节数，不是一条消息的长度。即使客户端发送一句很短的话，TCP 也不承诺它一定一次到齐。固定短文字实验只用于观察基本流程。
-
-第一阶段没有题库校验、JSON、登录、房间、比赛、多客户端或完整异常处理。故当前教学程序只打印 LAB_LISTENING，不打印作业要求的 SERVER_READY，也暂不支持最终 --questions 参数。
-
-## 第二课：循环接收一整段字节
-
-现在服务端在每次最多读取 1024 字节后继续读，直到客户端发送方向结束。自动测试发送 2500 个字符，确保内容需要多次 `recv()` 才能全部读完。
-
-服务端新增的核心逻辑：
-
-```python
-data = bytearray()
-while True:
-    chunk = connection.recv(1024)
-    if not chunk:
-        break
-    data.extend(chunk)
-connection.sendall(data)
-```
-
-- `data` 是逐段累积收到的字节。
-- `recv(1024)` 最多返回 1024 字节；网络中有更多数据时，需要下一轮再读。
-- 若 `recv()` 返回 `b""`，表示对方已结束发送方向，不会再发新字节。
-- 客户端调用 `shutdown(socket.SHUT_WR)` 表示“我发完了”，但仍保留连接来接收服务器回复。
-- 收到发送结束信号后，服务器才把完整内容用 `sendall()` 发回。
-
-这是“每个连接只传一段数据，以半关闭表示结束”的实验方法。正式作业中连接要维持并传多条 JSON 消息，不能靠关闭发送方向区分每条消息；后续阶段会学习换行分帧。
-
-## 第三课：在 TCP 字节流中找消息边界
-
-现在客户端不再关闭发送方向来表示一条消息结束。每条消息的末尾放一个换行字节 `\n`，同一连接可以一直打开并传多条消息。当前 payload 仍是普通 UTF-8 文本；下一阶段再把每行内容改成 JSON。
-
-为什么要自己找边界？TCP 只提供有序字节流。例如客户端连续发送两条消息：
-
-```text
-first\nsecond\n
-```
-
-服务器可能分两次收到：
-
-```text
-recv 1: b"fir"
-recv 2: b"st\nsecond\n"
-```
-
-也可能一次收到全部：
-
-```text
-recv 1: b"first\nsecond\n"
-```
-
-这两种情况下，消息都相同。`recv()` 的返回边界是操作系统给出的数据块边界，不是客户端的消息边界。换行符才是本阶段约定的消息边界。
-
-`protocol.extract_messages(buffer)` 分三步工作：
-
-1. 在缓冲区里寻找换行字节的位置。
-2. 找到时，把换行前面的字节取成一条完整消息，并把这一行（包括换行）从缓冲区删除；循环查找，因此一次能取出多条。
-3. 找不到换行时停止；残留的不完整字节留在缓冲区，等下一次 `recv()` 后再试。
-
-例如第一次收到 `b"first\nsec"`：提取出 `b"first"`，保留 `b"sec"`。下次收到 `b"ond\n"` 后拼起来，提取出 `b"second"`，缓冲区归空。这个“保留尾巴”是防止把半条消息误当成完整消息的关键。
-
-服务器针对每条连接创建自己的 `buffer`。每次收到 `chunk` 就追加到 buffer，然后把 `extract_messages(buffer)` 返回的完整消息逐条回复，并给回复重新加上 `\n`。服务器持续 `recv()`，直到客户端关闭连接。这样一次收到两条消息时不会丢掉第二条，同一条消息拆开发来也不会提前回复半条。
-
-客户端把 `first` 与 `second` 都编码成 UTF-8，分别在末尾加换行，再用一次 `sendall()` 发出；随后持续读取回复，用同一个提取函数还原回复行。客户端没有调用 `shutdown()`，所以它在收到两次回复之前一直保持连接。这正是与上一阶段半关闭实验的区别。
-
-自动测试验证两种边界：`test_protocol.py` 手动把数据分两次交给缓冲区，检查完整行与残留尾部；`test_network.py` 用真实 TCP 连接连续发送两条消息并确认两条回复都在连接关闭前到达。
-
-**本阶段刻意简化：**服务器仍只接受一个客户端；消息内容是文本，还没有 JSON；没有消息长度上限、错误消息格式或请求/响应类型。这些会在 JSON 协议和并发阶段逐步补上。
-
-## 第四课：每条消息放一个 JSON 请求
-
-第三阶段能分出一行的边界，但行里的文字仍没有结构。现在约定每条消息是一行 JSON 对象，例如：
-
-```json
-{"type":"echo","request_id":1,"text":"你好"}
-```
-
-服务器成功时回复：
-
-```json
-{"type":"response","request_id":1,"ok":true,"data":{"text":"你好"}}
-```
-
-若 JSON 不合法、命令未知或字段错误，返回一致的错误外壳，例如：
-
-```json
-{"type":"error","request_id":null,"error":{"code":"MALFORMED_MESSAGE","message":"..."}}
-```
-
-`request_id` 是客户端给请求的编号；响应带回相同编号，客户端将来可以把响应和对应请求配对。现在测试客户端一次等待几个响应，所以编号先用于展示，之后会真正用于并发请求管理。
-
-### 协议模块：先把字节规则集中起来
-
-`protocol.py` 有三类职责。
-
-```python
-MAX_MESSAGE_BYTES = 64 * 1024
-```
-
-单条消息最大 64 KiB，即 65,536 字节。这个限制是团队的网络安全/资源选择，不是 TCP 自带限制。解析前就检查大小，避免某个客户端不断发送没有换行的超长内容，让缓冲区无限增长。这个阶段限制单帧长度；以后还要注意一批帧合计占用的 buffer 上限。
-
-```python
-class ProtocolError(ValueError): ...
-class MessageTooLarge(ProtocolError): ...
-```
-
-这两个异常表达不同故障：一般协议错误代表内容不能按 JSON 协议解释；MessageTooLarge 表示帧长度超过限制。它们都能由服务器捕获并转换成网络错误响应。
-
-```python
-def extract_messages(buffer):
-    # 在 buffer 中循环找 b"\\n"
-    # 找到时取出一整行，并从 buffer 删除
-    # 没找到时检查长度，留下不足一行的尾部
-```
-
-它只处理“哪里是一行”的问题，返回 bytes。它不解释 JSON、不做命令分发，因此职责很窄。
-
-```python
-def encode_message(message):
-    # JSON 对象 -> UTF-8 字节 -> 末尾添加 b"\\n"
-
-def decode_message(payload):
-    # 不带换行的帧 -> UTF-8 字符串 -> JSON 对象
-    # 检查解出来的值必须是 dict
-```
-
-`ensure_ascii=False` 让中文以 UTF-8 发送，而不是转写成 `\\u` 序列；`separators=(",", ":")` 去掉 JSON 里的无用空格；编码后才检查大小，因为限制单位是线上传输的字节，不是 Python 字符数。
-
-### 服务器：接收、解释、回复
-
-服务器循环仍沿用上一阶段的结构。每次接收字节后先追加到连接的 buffer，再让 `extract_messages` 找完整帧。对于每个帧：
-
-1. `decode_message` 把 UTF-8 JSON 变成 Python 字典；解码失败则回 `MALFORMED_MESSAGE`。
-2. 读取 `type`；不是 `echo` 时回 `UNKNOWN_COMMAND`。
-3. 要求 `text` 是字符串；否则回 `INVALID_MESSAGE`。
-4. 合法请求把 `text` 放进成功响应的 `data` 中，并原样带回 `request_id`。
-5. `encode_message` 把响应转回 JSON 行，再由 `sendall` 发给同一个连接。
-
-注意职责顺序：protocol 解出对象，server 根据 `type` 决定动作，protocol 再编码回复。这就是后面接 B/C 的接缝：届时把第 2 步之后的临时 echo 判断交给业务分发函数，而 TCP 收发和帧处理保持在 A。
-
-### 临时客户端：和服务器遵守同一规则
-
-`server_temp_test.py` 生成 `echo` 请求，使用 `encode_message` 附上换行后发送。它保持连接打开，然后循环 `recv`、提取完整回复行、`decode_message` 并以 JSON 格式打印。测试客户端和服务器共用 protocol 函数，保证线上格式相同；底层实际 TCP 流仍由真实 socket 测试覆盖。
-
-它还能追加发送一条损坏的 `{bad json}`。服务器应回复 `MALFORMED_MESSAGE`，并继续保持连接处理前面的请求；坏帧不应该把服务器进程弄崩。
-
-### 这一步测了什么
-
-- `test_protocol.py` 检查中文 JSON 编码结果、JSON 往返、帧拆分/合并、错误 JSON、非对象 JSON 和超长帧。
-- `test_network.py` 通过真实 TCP 连接发送两个 JSON echo 请求和一个错误帧，检查成功响应保留 `request_id`、错误帧得到结构化错误、连接正常结束。
-- 全部测试在老师的 Docker 镜像里运行；当前结果 5 项通过。这仍只是 A 网络模块的小实验，距离最终服务器还有并发、业务分发、完整启动验证和关闭等阶段。
-
-## 第五课：主线程接连接，客户端线程处理消息
-
-上一阶段的服务器只调用一次 `accept()`，所以只能接入一个客户端。现在将工作拆成两个函数。
-
-服务器主线程的代码：
-
-```python
-while True:
-    connection, address = server.accept()
-    threading.Thread(
-        target=handle_client,
-        args=(connection, address),
-        daemon=True,
-    ).start()
-```
-
-主线程只做两件事：等待新连接，以及为新连接启动处理线程。`accept()` 每成功一次，就得到一对新的 `connection` 和 `address`；监听用的 `server` socket 继续留着，等待下一个客户端。
-
-`threading.Thread(...)` 创建一个线程对象。`target=handle_client` 表示线程启动后要调用哪个函数；`args=(connection, address)` 是传给这个函数的参数。这里必须写成带逗号的元组形式，单个元素的元组也需要逗号。最后的 `.start()` 才真正启动线程；如果只创建不 start，函数不会运行。
-
-`daemon=True` 表示主程序结束时不等待这些教学线程完成。正式服务器还要在 Ctrl+C 时主动通知并关闭连接，不能只依赖 daemon；这一点留到关闭阶段处理。
-
-每个线程执行同一个 `handle_client()`，但参数里的 `connection` 不同：
-
-```python
-def handle_client(connection, address):
-    with connection:
-        buffer = bytearray()
-        while True:
-            chunk = connection.recv(1024)
-            if not chunk:
-                break
-            buffer.extend(chunk)
-            # 提取、解码、生成响应、发送
-```
-
-这里的 `buffer` 是函数内部变量。每次调用 `handle_client()` 都会创建一个新的 `bytearray`，所以客户端一的半条 JSON 不会和客户端二的数据混在一起。`connection` 也是对应客户端自己的 socket；线程不会拿错回复对象。
-
-例如两个客户端同时连接时，结构是：
-
-```text
-主线程 accept()
-  ├── connection A -> handle_client(A) -> A 的 buffer
-  └── connection B -> handle_client(B) -> B 的 buffer
-```
-
-客户端 A 卡在 `recv()` 时，主线程仍可以继续 `accept()` 客户端 B，B 的线程也可以独立收发。此时已经具备“多个连接同时存在”的网络基础，但还没有房间或用户业务。
-
-### `send_response()` 为什么单独存在
-
-所有响应先通过这个函数：
-
-```python
-def send_response(connection, response):
-    try:
-        payload = encode_message(response)
-    except ProtocolError as exc:
-        print(f"无法编码响应：{exc}", flush=True)
-        return False
-
-    try:
-        connection.sendall(payload)
-    except OSError as exc:
-        print(f"发送响应失败：{exc}", flush=True)
-        return False
-    return True
-```
-
-第一段 `try` 专门接 `encode_message()` 的错误：响应字典如果包含无法转换为 JSON 的对象，或者编码后的响应太大，`encode_message()` 就会 `raise`；这里接住后返回 `False`。第二段 `try` 专门接 socket 发送错误，例如客户端已经断开导致的 `BrokenPipeError`。这两个错误来源不同，所以分成两段。
-
-调用者这样使用返回值：
-
-```python
-if not send_response(connection, response):
-    return
-```
-
-发送成功返回 `True`，线程继续处理；编码或发送失败返回 `False`，`return` 离开 `handle_client()`，随后 `with connection` 自动关闭 socket。这样异常不会无控制地冲出线程函数，也不会继续向已经坏掉的连接发送数据。
-
-### 当前多客户端测试
-
-`test_network.py` 启动一个服务器，再启动两个独立临时客户端；每个客户端发送自己的文字，并检查响应中的 `data.text` 没有串到另一个客户端。当前本机 8 项测试通过；Docker Desktop 当前未运行，所以这一次的证据是本机 Python 3.12，重新启动 Docker 后还要再执行官方镜像测试。
-
-本阶段仍缺少发送锁、服务器停止事件、Ctrl+C、连接表和业务分发。发送锁会在服务器开始主动广播时加入；现在每个线程只向自己的连接发送，暂时没有共享发送对象。
-
-## 第六课：记录活动连接并安全关闭
-
-多客户端已经能运行，但之前主程序的 `while True` 没有停止条件。现在 `Server` 对象拥有服务器生命周期。
-
-```python
-class Server:
-    def __init__(self, host, port):
-        self.host = host
-        self.port = port
-        self.listener = None
-        self.stop_event = threading.Event()
-        self.connections = set()
-        self.connections_lock = threading.Lock()
-```
-
-- `listener` 保存监听 socket，关闭时需要它。
-- `stop_event` 是线程安全的停止开关。没有设置时，服务器继续工作；设置后，主循环和客户端循环都会逐步退出。
-- `connections` 保存当前活动客户端 socket。
-- 多个客户端线程会同时读写这个集合，所以用 `connections_lock` 保护它。修改共享集合时先拿锁，完成后自动释放。
-
-主循环的关键部分：
-
-```python
-while not self.stop_event.is_set():
-    try:
-        connection, address = listener.accept()
-    except socket.timeout:
-        continue
-    except OSError:
-        break
-```
-
-监听 socket 设置了 `settimeout(0.5)`。这样 `accept()` 最多等待半秒，超时后重新检查 `stop_event`；否则它可能永远卡在 `accept()`，看不到 Ctrl+C 设置的停止状态。关闭 listener 时，阻塞中的 `accept()` 可能抛出 `OSError`，这里把它视为关闭过程并退出循环。
-
-接入连接后先登记：
-
-```python
-with self.connections_lock:
-    self.connections.add(connection)
-```
-
-登记必须发生在线程启动前，这样如果马上 Ctrl+C，关闭流程也能找到这个 socket。客户端线程结束时，在 `finally` 中执行：
-
-```python
-with self.connections_lock:
-    self.connections.discard(connection)
-```
-
-`discard()` 在元素已被关闭流程提前移除时不会报错；相比 `remove()` 更适合清理代码。
-
-`shutdown()` 的步骤是：
-
-1. 设置 `stop_event`，让主循环不再接受新连接。
-2. 关闭 `listener`，唤醒可能正在等待的 `accept()`。
-3. 在锁内复制当前连接列表。复制后马上释放锁，避免关闭 socket 时长期占用集合锁。
-4. 对每个连接调用 `shutdown(SHUT_RDWR)`，唤醒正在 `recv()` 的客户端线程。
-5. 再调用 `close()` 释放文件描述符。
-
-```python
-with self.connections_lock:
-    connections = list(self.connections)
-
-for connection in connections:
-    try:
-        connection.shutdown(socket.SHUT_RDWR)
-    except OSError:
-        pass
-    try:
-        connection.close()
-    except OSError:
-        pass
-```
-
-这里的两个 `try` 是正常的：关闭过程中一个 socket 可能已经被客户端线程或操作系统关闭，所以 `shutdown()` 或 `close()` 报 `OSError` 时，目标已经达到，不应让整个服务器崩溃。
-
-程序入口把系统的 Ctrl+C 交给 `server.shutdown`：
-
-```python
-server = Server(args.host, args.port)
-signal.signal(signal.SIGINT, server.shutdown)
-try:
-    server.serve_forever()
-finally:
-    server.shutdown()
-```
-
-第一次调用来自 Ctrl+C；如果没有 Ctrl+C，`finally` 在其他退出路径执行。`shutdown()` 开头检查 `stop_event`，所以重复调用是安全的。这种“正常运行时处理信号，离开主循环后再兜底清理”的结构会保留到最终服务器。
-
-当前本机 8 项测试仍通过；Docker Desktop 未运行，官方镜像验证待 Docker 恢复后执行。下一阶段会把 `questions` 启动参数和 B 的题库验证接入，但在此之前还会补发送锁和正式的消息分发接口。
-
-## 自动检查（由 Codex 执行）
+自动测试：
 
 ```powershell
 docker run --rm --mount "type=bind,source=D:\Y3\csi201\cw1\Codes,target=/code" csi201-cw1:latest -m unittest discover -s tests -v
 ```
 
-自动检查使用老师 Docker 镜像。协议单元测试检查拆分/合并后的消息边界；网络集成测试检查同一条 TCP 连接上两条消息的完整往返。它们不代表完整作业测试。
+本机替代检查为 `python -m unittest discover -s Codes/tests -v`。测试内容与文件对应见 [tests/README.md](tests/README.md)。本机测试通过不能替代老师 Docker 中的验收证据；10 条 echo 连接测试也不证明两个真实比赛房间的隔离。
 
-Python 官方参考：[Socket Programming HOWTO](https://docs.python.org/3.12/howto/sockets.html)、[socket 模块](https://docs.python.org/3.12/library/socket.html)。先理解本课，再按需读英文参考。任何一行不懂都可以直接指出，我们停在那一行解释。
+### 完整题库接入后的正式启动
+
+在容器的 `/code` 或提交目录中运行：
+
+```bash
+python3 server.py --host <server_IP> --port <port> --questions <json_path>
+```
+
+目前缺少 B 的 `load_question_bank()`，所以该命令会报题库加载失败、退出码为 1，不会监听。`--lab-mode` 与 `--questions` 互斥；前者只用于当前网络联调，不满足正式题库启动要求。仅提供 B 的加载函数仍不会自动开启大厅/比赛，还必须按第 5 节接入业务回调。
+
+## 10. 尚待完成的工作
+
+| 工作 | 负责/协作 |
+| --- | --- |
+| 实现完整题库校验和题库访问结构 | B，A/E 接入启动入口 |
+| 统一请求路由、登录/房间/比赛处理与断线回调 | B/C，A/E 完成装配，D/E 同步消息字段 |
+| 慢连接的发送限制、关闭等待边界和停止比赛线程 | A/C，并与业务回调联调 |
+| 特殊 JSON 输入和并发关闭的边界加固 | A；当前测试未覆盖所有情况 |
+| 正式客户端与 CLI、关闭通知 | D/E，与 A/C 联调 |
+| 老师 Docker 中真实 Ctrl+C、10 个正式客户端、两个独立比赛房间 | 全组；保留实际输出和证据 |
+| 开发文档中的协议、并发、关闭设计与测试记录 | A 提供网络部分，全组统一汇总 |

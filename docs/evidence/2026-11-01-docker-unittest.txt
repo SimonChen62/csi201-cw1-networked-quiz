@@ -1,0 +1,56 @@
+无法编码响应：cannot encode message: Object of type object is not JSON serializable
+test_broadcast_encoding_failure_keeps_sessions_registered (test_disconnect.DisconnectTest.test_broadcast_encoding_failure_keeps_sessions_registered) ... ok
+test_broadcast_network_failure_wakes_worker_and_notifies_business (test_disconnect.DisconnectTest.test_broadcast_network_failure_wakes_worker_and_notifies_business) ... 客户端已连接：('local', 1)发送响应失败：[Errno 32] Broken pipe
+
+客户端已断开：('local', 1)
+ok
+test_callback_error_does_not_break_other_client (test_disconnect.DisconnectTest.test_callback_error_does_not_break_other_client) ... 客户端已连接：('local', 1)
+客户端已连接：('local', 1)
+业务断线清理失败：模拟业务清理失败
+客户端已断开：('local', 1)
+业务断线清理失败：模拟业务清理失败
+客户端已断开：('local', 1)
+ok
+test_encoding_failure_does_not_close_healthy_connection (test_disconnect.DisconnectTest.test_encoding_failure_does_not_close_healthy_connection) ... 无法编码响应：cannot encode message: Object of type object is not JSON serializable
+ok
+test_repeated_close_unblocks_reader_and_notifies_once_outside_lock (test_disconnect.DisconnectTest.test_repeated_close_unblocks_reader_and_notifies_once_outside_lock) ... 客户端已连接：('local', 1)
+客户端已断开：('local', 1)
+ok
+test_shutdown_waits_until_disconnect_callback_finishes (test_disconnect.DisconnectTest.test_shutdown_waits_until_disconnect_callback_finishes) ... 客户端已连接：('local', 1)
+客户端已断开：('local', 1)
+ok
+test_stop_request_then_shutdown_still_closes_connections (test_disconnect.DisconnectTest.test_stop_request_then_shutdown_still_closes_connections) ... 客户端已连接：('local', 1)
+客户端已断开：('local', 1)
+ok
+test_unencodable_reply_returns_internal_error_and_connection_can_continue (test_disconnect.DisconnectTest.test_unencodable_reply_returns_internal_error_and_connection_can_continue) ... 客户端已连接：('local', 1)
+无法编码响应：cannot encode message: Object of type object is not JSON serializable
+ok
+test_broadcast_only_targets_given_sessions_and_reports_failed_send (test_dispatch.DispatchTest.test_broadcast_only_targets_given_sessions_and_reports_failed_send) ... 客户端已断开：('local', 1)
+ok
+test_malformed_frame_then_custom_handler_event_and_response (test_dispatch.DispatchTest.test_malformed_frame_then_custom_handler_event_and_response) ... 客户端已连接：('local', 1)
+客户端已断开：('local', 1)
+ok
+test_temporary_client_does_not_count_event_as_reply (test_dispatch.DispatchTest.test_temporary_client_does_not_count_event_as_reply) ... ok
+test_json_responses_and_malformed_message_error_share_connection (test_network.EchoTest.test_json_responses_and_malformed_message_error_share_connection) ... ok
+test_ten_simultaneous_clients_receive_independent_responses (test_network.EchoTest.test_ten_simultaneous_clients_receive_independent_responses) ... ok
+test_two_clients_receive_their_own_responses (test_network.EchoTest.test_two_clients_receive_their_own_responses) ... ok
+test_extractor_keeps_partial_line_and_reads_multiple_lines (test_protocol.ProtocolTest.test_extractor_keeps_partial_line_and_reads_multiple_lines) ... ok
+test_json_round_trip_preserves_unicode_and_adds_newline (test_protocol.ProtocolTest.test_json_round_trip_preserves_unicode_and_adds_newline) ... ok
+test_rejects_frame_larger_than_limit (test_protocol.ProtocolTest.test_rejects_frame_larger_than_limit) ... ok
+test_rejects_invalid_json_and_non_object_values (test_protocol.ProtocolTest.test_rejects_invalid_json_and_non_object_values) ... ok
+test_closed_socket_returns_false_instead_of_raising (test_server.SendResponseTest.test_closed_socket_returns_false_instead_of_raising) ... ok
+test_concurrent_writers_keep_each_json_frame_intact (test_server.SendResponseTest.test_concurrent_writers_keep_each_json_frame_intact) ... ok
+test_encode_failure_is_logged_and_not_sent (test_server.SendResponseTest.test_encode_failure_is_logged_and_not_sent) ... ok
+test_valid_response_is_encoded_and_sent (test_server.SendResponseTest.test_valid_response_is_encoded_and_sent) ... ok
+test_formal_mode_prints_ready_marker_after_binding (test_startup.StartupTest.test_formal_mode_prints_ready_marker_after_binding) ... ok
+test_host_and_port_are_required (test_startup.StartupTest.test_host_and_port_are_required) ... ok
+test_invalid_question_bank_prevents_server_from_starting (test_startup.StartupTest.test_invalid_question_bank_prevents_server_from_starting) ... ok
+test_lab_mode_cannot_be_combined_with_questions (test_startup.StartupTest.test_lab_mode_cannot_be_combined_with_questions) ... ok
+test_lab_mode_keeps_echo_server_available (test_startup.StartupTest.test_lab_mode_keeps_echo_server_available) ... ok
+test_question_bank_is_loaded_before_server_starts_listening (test_startup.StartupTest.test_question_bank_is_loaded_before_server_starts_listening) ... ok
+test_startup_requires_questions_or_explicit_lab_mode (test_startup.StartupTest.test_startup_requires_questions_or_explicit_lab_mode) ... ok
+
+----------------------------------------------------------------------
+Ran 29 tests in 1.528s
+
+OK
