@@ -1,17 +1,17 @@
-test_01_connection_state (Codes.tests.test_state.TestClientState.test_01_connection_state)                              
-测试连接与断开状态 ... ok                                                                                               
-test_02_enter_and_leave_room (Codes.tests.test_state.TestClientState.test_02_enter_and_leave_room)                      
-测试进入和离开房间，以及房主判断 ... ok                                                                                 
-test_03_update_players_keep_score (Codes.tests.test_state.TestClientState.test_03_update_players_keep_score)            
-测试更新玩家列表时，旧分数不会被意外清零 ... ok                                                                         
-test_04_question_flow_and_duplicate_prevention (Codes.tests.test_state.TestClientState.test_04_question_flow_and_duplicate_prevention)                                                                                                          
-测试发题、答题、公布答案的流转 ... ok                                                                                   
-test_05_state_isolation (Codes.tests.test_state.TestClientState.test_05_state_isolation)                                
-测试切换房间时，比赛数据不会串房 ... ok                                                                                 
-test_06_thread_safe_snapshot (Codes.tests.test_state.TestClientState.test_06_thread_safe_snapshot)                      
-测试快照深拷贝，以及高并发读取不崩溃 ... ok                                                                             
+test_01_connection_state (Desktop.csi201-cw1-networked-quiz-main.Codes.tests.test_state.TestClientState.test_01_connection_state)                                                                                                               
+Test connection and disconnection state ... ok                                                                          
+test_02_enter_and_leave_room (Desktop.csi201-cw1-networked-quiz-main.Codes.tests.test_state.TestClientState.test_02_enter_and_leave_room)                                                                                                       
+Test entering and leaving a room, as well as host determination ... ok                                                  
+test_03_update_players_keep_score (Desktop.csi201-cw1-networked-quiz-main.Codes.tests.test_state.TestClientState.test_03_update_players_keep_score)                                                                                             
+Test that old scores are not accidentally reset when updating the player list ... ok                                    
+test_04_question_flow_and_duplicate_prevention (Desktop.csi201-cw1-networked-quiz-main.Codes.tests.test_state.TestClientState.test_04_question_flow_and_duplicate_prevention)                                                                   
+Test the flow of sending a question, answering, and revealing the answer ... ok                                         
+test_05_state_isolation (Desktop.csi201-cw1-networked-quiz-main.Codes.tests.test_state.TestClientState.test_05_state_isolation)                                                                                                                 
+Test that match data does not leak between rooms when switching rooms ... ok                                            
+test_06_thread_safe_snapshot (Desktop.csi201-cw1-networked-quiz-main.Codes.tests.test_state.TestClientState.test_06_thread_safe_snapshot)                                                                                                       
+Test snapshot deep copy, and that high-concurrency reads do not crash ... ok                                            
                                                                                                                         
 ----------------------------------------------------------------------                                                  
-Ran 6 tests in 0.167s                                                                                                   
+Ran 6 tests in 0.214s                                                                                                   
                                                                                                                         
-OK  
+OK            
