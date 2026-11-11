@@ -1,5 +1,3 @@
-"""Member D: Local client state and thread-safe data management."""
-
 import threading
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Any
