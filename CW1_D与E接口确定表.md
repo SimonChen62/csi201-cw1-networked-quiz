@@ -2,7 +2,9 @@
 
 更新日期：2026-11-12。对接人：D 卜凡洲、E 楼伊诺；服务端协议由 A 陈子谦、B 马雨辰、C 陆昕怡参与确认。
 
-本表区分“本分支已经实现”与“仍需组员确认”。代码以 `codex/e-cli-integration` 分支为准。客户端可与脚本对端运行；B/C 的正式业务模块在本次基线中仍是占位文件，因此不能将以下业务字段称为全组已确认的最终协议。
+本表记录已合入 `main@7d65143` 的客户端实际接口，**不是最新版 v2 协议的替代规范**。C 已在 `codex/game-engine@b87bcc4` 提交按 v2 实现的比赛引擎；B 的正式业务仍待交付。当前客户端可与旧约定的脚本对端运行，尚未完成 v2 迁移。
+
+**本轮新增待办：** 按用户提供的《系统流程与五人分工计划》末尾 v2 对齐 `start / room_members / choice / host_id / display_name / question_open / question_closed / game_finished`，并补齐 hello 与退出约定。逐项差异见 [全组进度表](docs/progress/2026-11-12-team-progress.md)。下文保留现有 API 与旧 wire 字段，便于 D/E 比较和修改；不要据此要求 B/C 改回旧协议。
 
 旧草案中的 `client_ui.py`、`run_ui(api)`、返回请求编号的异步 API 和独立 `answer_result` 事件均已由下述实际接口替代。操作步骤见 [E 客户端指南](docs/E_client_guide.md)，测试与限制见 [验证记录](docs/evidence/2026-11-12-e-cli-validation.md)。
 
@@ -43,7 +45,7 @@
 
 `response`、`error` 和 `event` 是三种外层类型；`question`、`room_update` 等放在 `event` 字段。A README 中的 `room_updated/question_open` 是封装示意，当前客户端实际消费的是本表中的名称。
 
-**下面的业务内容是客户端当前期望的结构，尚待 B/C 确认。** 实际代码样例位于 `Codes/tests/cli_demo_server.py`；它只是单客户端脚本对端。
+**下面的业务内容是客户端当前使用的旧结构，需迁移到最新版 v2。** 现有代码样例位于 `Codes/tests/cli_demo_server.py`；它只是单客户端脚本对端，同样需要跟随正式协议迁移。
 
 | CLI 命令 | 请求类型与字段（除 type/request_id） | 成功 `data` / 后续动作 | 确认人 |
 |---|---|---|---|
@@ -100,6 +102,6 @@
 | B | hello、目录、data.room、ready、room_update、离开/房主转移 | 待填写 |
 | C | question/result/leaderboard、答题接受响应、计时和结算顺序 | 待填写 |
 | D | 同步 API、event_queue、状态快照、此次 connection/state 补丁 | 待填写 |
-| E | CLI 已有可运行版本；按组员确认结果调整并组织正式联调 | 本分支可开始客户端试用 |
+| E | CLI 已合入 main；与 D 迁移 v2，并在 B/C 正式接入后组织联调 | 脚本对端可试用，真实业务待联调 |
 
 改字段时请同时提交实现、样例和测试，并在本表记录变更。此表描述实际客户端和待确认约定，不把参考协议附录的示例作为额外课程硬性要求。

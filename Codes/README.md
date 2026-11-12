@@ -2,9 +2,11 @@
 
 本文说明 A 提供的服务端网络层、各角色如何调用，以及当前尚未完成的联调事项。以当前 `server.py`、`protocol.py` 为准；分工依据是项目根目录的《CW1_系统流程与五人分工计划.md》。
 
-**当前是供全组接入的开发版本。** A 的网络层、D 的客户端通信/状态，以及 E 的客户端入口和 CLI 已有实现。B/C 的业务模块仍为占位内容，正式服务器仍待接线。E 的 CLI 可先用脚本对端试用，见 [客户端操作说明](../docs/E_client_guide.md) 和 [D/E 接口表](../CW1_D与E接口确定表.md)。
+**当前是供全组接入的开发版本。** A 网络层、D 通信/状态、E 入口/CLI 已合入 main；C 的比赛引擎已在 `codex/game-engine@b87bcc4` 交付，待评审集成。B 的题库加载与大厅仍占位，正式服务器启动尚未通过。详见 [全组进度](../docs/progress/2026-11-12-team-progress.md)、[客户端操作说明](../docs/E_client_guide.md) 和 [D/E 接口表](../CW1_D与E接口确定表.md)。
 
-2026-11-12 在本机 `csi201:latest` 容器（Python 3.12.14）中运行了全部 **54 项测试，均通过**，见 [验证范围和限制](../docs/evidence/2026-11-12-e-cli-validation.md) 与 [原始输出](../docs/evidence/2026-11-12-e-cli-docker-unittest.txt)。镜像是否来自课程官方材料尚待确认。测试包含模拟业务对端，不能据此认定完整比赛或双房间验收完成。
+2026-11-12 使用用户确认的老师 Dockerfile 原样新构建环境（Python 3.12.16）：main **54 项通过**，C 分支独立模块 **7 项通过**；正式启动仍因缺少 `load_question_bank` 退出 1。见 [官方环境复验记录](../docs/evidence/2026-11-12-official-env-validation.md)。两份独立版本的通过结果不代表整机集成，完整比赛及十客户端、双房间仍待验收。
+
+**协议对齐提醒：** 最新分工计划增加了冻结版 v2，C 已使用 `question_open/question_closed/game_finished`；main 客户端仍用旧字段。本文以下网络 API 与历史示例描述当前 A 的代码，不代替 v2 对齐目标；差异见全组进度表。
 
 ## 1. A 已实现的内容
 
@@ -261,7 +263,7 @@ python Codes/tests/server_temp_test.py --message "hello" --message "second" --se
 
 ### 老师 Docker 环境
 
-以下是 A 的历史测试命令，`csi201-cw1:latest` 是当时本机标签，不能仅凭名称认定为官方镜像；不要用仓库自带 Dockerfile 替代课程环境。每位成员先确认镜像来源、入口和挂载路径。E 本轮实际使用 `csi201:latest`，可复现命令见 [11-12 验证记录](../docs/evidence/2026-11-12-e-cli-validation.md)。
+以下保留 A 的历史测试命令。最新复验已使用老师环境包原始 Dockerfile，新构建标签为 `csi201-cw1:verify-20261112`；来源哈希、镜像标识与可复现命令见 [官方环境复验记录](../docs/evidence/2026-11-12-official-env-validation.md)。不要用仓库自带 Dockerfile 替代老师环境包。
 
 窗口一：
 

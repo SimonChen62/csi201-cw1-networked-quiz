@@ -1,0 +1,12 @@
+test_duplicate_and_late_answers_are_rejected_without_score_change (test_game_engine.GameEngineTests.test_duplicate_and_late_answers_are_rejected_without_score_change) ... ok
+test_final_leaderboard_is_stable_and_includes_disconnected_player (test_game_engine.GameEngineTests.test_final_leaderboard_is_stable_and_includes_disconnected_player) ... ok
+test_question_event_hides_answer_and_scores_correct_answers (test_game_engine.GameEngineTests.test_question_event_hides_answer_and_scores_correct_answers) ... ok
+test_scores_and_events_do_not_leak_between_rooms (test_game_engine.GameEngineTests.test_scores_and_events_do_not_leak_between_rooms) ... ok
+test_start_requires_two_players_by_default (test_game_engine.GameEngineTests.test_start_requires_two_players_by_default) ... ok
+test_ten_players_can_progress_in_two_independent_rooms (test_game_engine.GameEngineTests.test_ten_players_can_progress_in_two_independent_rooms) ... ok
+test_timer_thread_closes_question_at_server_deadline (test_game_engine.GameEngineTests.test_timer_thread_closes_question_at_server_deadline) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 0.022s
+
+OK

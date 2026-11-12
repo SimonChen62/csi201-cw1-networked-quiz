@@ -16,7 +16,9 @@
 | `test_cli.py` | 本次 3 项真实子进程/TCP 客户端检查：脚本业务流程、输入空闲时的结果/断线、EOF 退出 |
 | `cli_demo_server.py` | 单客户端脚本对端，含模拟第二名玩家；仅供开发，不是 B/C 的实现或多人验收证据 |
 
-本轮全部 **54 项测试通过**：A 原有 29 项、D 原有 11 项、本次 14 项。执行环境为本机 `csi201:latest` / Python 3.12.14，镜像官方来源待确认；见 [11-12 验证记录](../../docs/evidence/2026-11-12-e-cli-validation.md) 和 [原始输出](../../docs/evidence/2026-11-12-e-cli-docker-unittest.txt)。A 的网络测试使用 `--lab-mode`，CLI 使用脚本对端。测试不能证明真实题库完整校验、正式比赛、慢连接、真实 SIGINT 或两个独立房间已经完成。
+最新复验中，main **54 项通过**（A 原有 29、D 原有 11、E 增量 14），C 独立分支的 `test_game_engine.py` **7 项通过**。本轮用老师环境包原始 Dockerfile 新构建，Python 3.12.16；见 [官方复验记录](../../docs/evidence/2026-11-12-official-env-validation.md)、[main 输出](../../docs/evidence/2026-11-12-official-main-unittest.txt) 和 [C 输出](../../docs/evidence/2026-11-12-official-game-engine-unittest.txt)。C 测试文件还不在本次 main 基线中，不能把两套测试合称已集成的 61 项。
+
+A 网络测试使用 `--lab-mode`，CLI 使用脚本对端，C 的十玩家场景是内存状态测试。正式启动实测因缺少 B 的加载器失败；真实题库完整校验、v2 联调、完整比赛、真实 SIGINT 和十客户端/双房间仍待验收。
 
 从项目根目录开发调试：
 

@@ -1,0 +1,2 @@
+题库加载或校验失败：cannot import name 'load_question_bank' from 'server_modules.question_bank' (/code/server_modules/question_bank.py)
+FORMAL_START_EXIT=1
