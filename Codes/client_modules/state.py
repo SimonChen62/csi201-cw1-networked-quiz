@@ -1,4 +1,5 @@
 import threading
+from copy import deepcopy
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Any
 
@@ -53,6 +54,8 @@ class ClientState:
 
         # --- Room State (Isolated per room) ---
         self.current_room_id: Optional[str] = None
+        self.quiz_id: Optional[str] = None
+        self.host_user_id: Optional[str] = None
         self.is_host: bool = False
         self.room_phase: str = "LOBBY"  # LOBBY, WAITING, RUNNING, FINISHED
         self.players_in_room: Dict[str, PlayerInfo] = {}
@@ -80,6 +83,8 @@ class ClientState:
             self.connected = False
             self.user_id = None
             self.display_name = None
+            self.available_quizzes.clear()
+            self.available_rooms.clear()
             self.leave_room()
 
     # ==========================================
@@ -87,29 +92,35 @@ class ClientState:
     # ==========================================
     def update_quizzes(self, quizzes: List[Dict[str, Any]]):
         with self._lock:
-            self.available_quizzes = quizzes
+            self.available_quizzes = deepcopy(quizzes)
 
     def update_rooms(self, rooms: List[Dict[str, Any]]):
         with self._lock:
-            self.available_rooms = rooms
+            self.available_rooms = deepcopy(rooms)
 
     # ==========================================
     # Room State Updates
     # ==========================================
-    def enter_room(self, room_id: str, host_id: str, players: List[Dict[str, Any]]):
+    def enter_room(self, room_id: str, host_id: str, players: List[Dict[str, Any]],
+                   quiz_id=None, phase="WAITING"):
         with self._lock:
             # Clear previous room match data before entering a new room
             self._reset_game_state_internal()
+            self.players_in_room.clear()
             
             self.current_room_id = room_id
+            self.quiz_id = quiz_id
+            self.host_user_id = host_id
             self.is_host = (self.user_id == host_id)
-            self.room_phase = "WAITING"
+            self.room_phase = phase
             self._update_players_internal(players)
 
     def leave_room(self):
         """Called when user leaves, gets kicked, or disconnects."""
         with self._lock:
             self.current_room_id = None
+            self.quiz_id = None
+            self.host_user_id = None
             self.is_host = False
             self.room_phase = "LOBBY"
             self.players_in_room.clear()
@@ -118,6 +129,22 @@ class ClientState:
     def update_room_players(self, players: List[Dict[str, Any]]):
         with self._lock:
             self._update_players_internal(players)
+
+    def update_room(self, room_data):
+        """Apply an authoritative room view without losing active question data."""
+        with self._lock:
+            if room_data.get("room_id", self.current_room_id) != self.current_room_id:
+                return False
+            if "host_user_id" in room_data:
+                self.host_user_id = room_data["host_user_id"]
+                self.is_host = self.user_id == self.host_user_id
+            if "quiz_id" in room_data:
+                self.quiz_id = room_data["quiz_id"]
+            if "state" in room_data:
+                self.room_phase = room_data["state"]
+            if "players" in room_data:
+                self._update_players_internal(room_data["players"])
+            return True
 
     def _update_players_internal(self, players_data: List[Dict[str, Any]]):
         """Helper: Updates player list safely without losing existing scores."""
@@ -148,11 +175,14 @@ class ClientState:
         Called when server sends a 'question' event.
         """
         with self._lock:
+            if q_data.get("room_id", self.current_room_id) != self.current_room_id:
+                return False
+            self.room_phase = "RUNNING"
             # SECURITY: Strictly parse only approved fields. Ignore 'answer' even if accidentally sent.
             self.current_question = QuestionInfo(
                 question_id=q_data.get("question_id", ""),
                 text=q_data.get("text", ""),
-                options=q_data.get("options", {}),
+                options=deepcopy(q_data.get("options", {})),
                 time_limit=q_data.get("time_limit", 15),
                 points=q_data.get("points", 100),
                 question_index=q_data.get("question_index", 0)
@@ -160,13 +190,19 @@ class ClientState:
             # New question arrived, allow user to answer
             self.has_answered_current_question = False
             self.last_result = None
+            return True
 
-    def mark_answered(self):
+    def mark_answered(self, question_id=None, room_id=None):
         """
-        Called by UI (E) immediately after sending an answer.
-        Blocks duplicate submissions at the client level.
+        Called after server acceptance. A late acknowledgement cannot mark a new question.
         """
         with self._lock:
+            if room_id is not None and room_id != self.current_room_id:
+                return
+            if self.current_question is None:
+                return
+            if question_id is not None and question_id != self.current_question.question_id:
+                return
             self.has_answered_current_question = True
 
     def set_question_result(self, result_data: Dict[str, Any]):
@@ -176,6 +212,10 @@ class ClientState:
         """
         with self._lock:
             q_id = result_data.get("question_id", "")
+            if result_data.get("room_id", self.current_room_id) != self.current_room_id:
+                return False
+            if self.current_question is None or self.current_question.question_id != q_id:
+                return False
             ans = result_data.get("answer", "")
             scores = result_data.get("scores", {})
             
@@ -183,7 +223,7 @@ class ClientState:
             self.last_result = QuestionResult(
                 question_id=q_id,
                 correct_answer=ans,
-                scores=scores
+                scores=deepcopy(scores)
             )
             
             # Update scores in player list
@@ -194,12 +234,14 @@ class ClientState:
             # Question is closed, clear active question
             self.current_question = None
             self.has_answered_current_question = False
+            return True
 
     def finish_game(self, leaderboard: List[Dict[str, Any]]):
         with self._lock:
             self.room_phase = "FINISHED"
             self.current_question = None
-            self.final_leaderboard = leaderboard
+            self.has_answered_current_question = False
+            self.final_leaderboard = deepcopy(leaderboard)
 
     def _reset_game_state_internal(self):
         """Helper: Clears game-specific data for isolation."""
@@ -237,6 +279,7 @@ class ClientState:
             result_copy = None
             if self.last_result:
                 result_copy = {
+                    "question_id": self.last_result.question_id,
                     "correct_answer": self.last_result.correct_answer,
                     "scores": dict(self.last_result.scores)
                 }
@@ -244,12 +287,17 @@ class ClientState:
             return {
                 "connected": self.connected,
                 "user_id": self.user_id,
+                "display_name": self.display_name,
+                "available_quizzes": deepcopy(self.available_quizzes),
+                "available_rooms": deepcopy(self.available_rooms),
                 "current_room_id": self.current_room_id,
+                "quiz_id": self.quiz_id,
+                "host_user_id": self.host_user_id,
                 "is_host": self.is_host,
                 "room_phase": self.room_phase,
                 "players": players_copy,
                 "current_question": q_copy,
                 "has_answered": self.has_answered_current_question,
                 "last_result": result_copy,
-                "leaderboard": list(self.final_leaderboard)
+                "leaderboard": deepcopy(self.final_leaderboard)
             }

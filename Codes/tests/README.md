@@ -1,4 +1,4 @@
-# A 网络层测试与临时客户端
+# 网络层、客户端与 CLI 测试
 
 运行步骤、对接 API 和当前限制见 [Codes/README.md](../README.md)。
 
@@ -11,8 +11,12 @@
 | `test_disconnect.py` | 网络失败关闭、编码失败保留连接、断线回调、重复关闭、等待回调完成和其他客户端继续工作 |
 | `test_startup.py` | 参数必填/互斥、假加载器先于监听、校验失败不启动、正式启动标志；不验证 B 的真实题库 schema |
 | `test_network.py` | 子进程和真实 TCP 测试；多请求、格式错误、两个客户端和十条同时建立的连接分别收到自己的回复 |
+| `test_connection.py` / `test_state.py` | D 原有 11 项通信、分片/合并、响应/事件、超时/断线与状态测试 |
+| `test_client_regressions.py` | 本次 11 项 D/E 接入回归：错误匹配、pending 清理、超时、旧题确认、外房事件、快照和输入题号 |
+| `test_cli.py` | 本次 3 项真实子进程/TCP 客户端检查：脚本业务流程、输入空闲时的结果/断线、EOF 退出 |
+| `cli_demo_server.py` | 单客户端脚本对端，含模拟第二名玩家；仅供开发，不是 B/C 的实现或多人验收证据 |
 
-最近一次本机共 29 项测试通过；当前测试子进程显式使用 `--lab-mode`。工作区已有 [2026-11-01 Docker 验证记录](../../docs/evidence/2026-11-01-docker-evidence.md) 和 [完整测试输出](../../docs/evidence/2026-11-01-docker-unittest.txt)，记录为 29 项通过，正式启动仍因缺少 B 的题库加载函数而失败。本次文档更新未重新运行 Docker。测试并不证明真实题库校验、完整比赛、慢连接、真实 SIGINT、两个独立房间或所有协议边界已经完成。
+本轮全部 **54 项测试通过**：A 原有 29 项、D 原有 11 项、本次 14 项。执行环境为本机 `csi201:latest` / Python 3.12.14，镜像官方来源待确认；见 [11-12 验证记录](../../docs/evidence/2026-11-12-e-cli-validation.md) 和 [原始输出](../../docs/evidence/2026-11-12-e-cli-docker-unittest.txt)。A 的网络测试使用 `--lab-mode`，CLI 使用脚本对端。测试不能证明真实题库完整校验、正式比赛、慢连接、真实 SIGINT 或两个独立房间已经完成。
 
 从项目根目录开发调试：
 

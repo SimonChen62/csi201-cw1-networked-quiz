@@ -2,7 +2,9 @@
 
 本文说明 A 提供的服务端网络层、各角色如何调用，以及当前尚未完成的联调事项。以当前 `server.py`、`protocol.py` 为准；分工依据是项目根目录的《CW1_系统流程与五人分工计划.md》。
 
-**当前是供全组接入的开发版本。** 网络基础已实现，默认请求处理仍为 `echo`。B/C 的服务端模块和 D/E 的客户端模块目前是占位文件。本机共 29 项测试通过；工作区已有 [2026-11-01 Docker 验证记录](../docs/evidence/2026-11-01-docker-evidence.md) 及其 [完整测试输出](../docs/evidence/2026-11-01-docker-unittest.txt)，记录同样为 29 项通过，但正式启动仍因缺少题库加载函数而失败。本次 README 更新没有重跑 Docker。
+**当前是供全组接入的开发版本。** A 的网络层、D 的客户端通信/状态，以及 E 的客户端入口和 CLI 已有实现。B/C 的业务模块仍为占位内容，正式服务器仍待接线。E 的 CLI 可先用脚本对端试用，见 [客户端操作说明](../docs/E_client_guide.md) 和 [D/E 接口表](../CW1_D与E接口确定表.md)。
+
+2026-11-12 在本机 `csi201:latest` 容器（Python 3.12.14）中运行了全部 **54 项测试，均通过**，见 [验证范围和限制](../docs/evidence/2026-11-12-e-cli-validation.md) 与 [原始输出](../docs/evidence/2026-11-12-e-cli-docker-unittest.txt)。镜像是否来自课程官方材料尚待确认。测试包含模拟业务对端，不能据此认定完整比赛或双房间验收完成。
 
 ## 1. A 已实现的内容
 
@@ -259,7 +261,7 @@ python Codes/tests/server_temp_test.py --message "hello" --message "second" --se
 
 ### 老师 Docker 环境
 
-先启动 Docker Desktop，并确认已用老师提供的 Dockerfile 构建本机镜像 `csi201-cw1:latest`。该标签是本机名称，其他组员需先准备同一老师环境。以下挂载路径按自己的仓库位置调整。
+以下是 A 的历史测试命令，`csi201-cw1:latest` 是当时本机标签，不能仅凭名称认定为官方镜像；不要用仓库自带 Dockerfile 替代课程环境。每位成员先确认镜像来源、入口和挂载路径。E 本轮实际使用 `csi201:latest`，可复现命令见 [11-12 验证记录](../docs/evidence/2026-11-12-e-cli-validation.md)。
 
 窗口一：
 
@@ -301,6 +303,6 @@ python3 server.py --host <server_IP> --port <port> --questions <json_path>
 | 统一请求路由、登录/房间/比赛处理与断线回调 | B/C，A/E 完成装配，D/E 同步消息字段 |
 | 慢连接的发送限制、关闭等待边界和停止比赛线程 | A/C，并与业务回调联调 |
 | 特殊 JSON 输入和并发关闭的边界加固 | A；当前测试未覆盖所有情况 |
-| 正式客户端与 CLI、关闭通知 | D/E，与 A/C 联调 |
+| 将已有客户端与 CLI 接入正式业务，完成关闭流程联调 | D/E，与 A/B/C 联调 |
 | 老师 Docker 中真实 Ctrl+C、10 个正式客户端、两个独立比赛房间 | 全组；保留实际输出和证据 |
 | 开发文档中的协议、并发、关闭设计与测试记录 | A 提供网络部分，全组统一汇总 |
