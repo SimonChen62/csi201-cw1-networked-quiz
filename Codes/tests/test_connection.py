@@ -93,7 +93,17 @@ class TestConnection(unittest.TestCase):
         # Send a request with a timeout of 0.5 seconds
         resp = self.conn.send_request("slow_request", {}, timeout=0.5)
         self.assertFalse(resp["ok"])
+       
+        self.assertEqual(resp["type"], "response")
         self.assertEqual(resp["error"]["code"], "TIMEOUT")
+
+    def test_06_local_error_response_format(self):
+        """Test that locally synthesized network errors use the unified 'response' envelope format"""
+        # No connection established, triggering a local NOT_CONNECTED error
+        resp = self.conn.send_request("any_command", {})
+        self.assertFalse(resp["ok"])
+        self.assertEqual(resp["type"], "response")
+        self.assertEqual(resp["error"]["code"], "NOT_CONNECTED")
 
 if __name__ == "__main__":
     unittest.main()
