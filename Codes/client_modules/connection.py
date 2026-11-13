@@ -116,7 +116,7 @@ class Connection:
                     for frame in extract_messages(buffer):
                         message = decode_message(frame)
                         msg_type = message.get("type")
-                        if msg_type in ("response", "error"):
+                        if msg_type == "response":
                             self._complete_request(message)
                         elif msg_type == "event":
                             data = message.get("data", {})
@@ -161,9 +161,7 @@ class Connection:
                     "message": f"Late response for request {request_id}; refresh room status before retrying.",
                 })
                 return
-            if message.get("type") == "error":
-                message = {**message, "ok": False}
-            elif message.get("ok") and self.is_running:
+            if message.get("ok") and self.is_running:
                 try:
                     self._apply_response_state(pending, message.get("data", {}))
                 except (ValueError, TypeError, KeyError) as exc:
@@ -258,6 +256,6 @@ class Connection:
     @staticmethod
     def _make_error_response(code, message, request_id=None):
         return {
-            "type": "error", "request_id": request_id, "ok": False,
+            "type": "response", "request_id": request_id, "ok": False,
             "error": {"code": code, "message": message},
         }
