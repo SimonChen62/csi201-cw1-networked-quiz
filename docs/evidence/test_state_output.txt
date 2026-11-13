@@ -1,17 +1,19 @@
-test_01_connection_state (Desktop.csi201-cw1-networked-quiz-main.Codes.tests.test_state.TestClientState.test_01_connection_state)                                                                                                               
-Test connection and disconnection state ... ok                                                                          
-test_02_enter_and_leave_room (Desktop.csi201-cw1-networked-quiz-main.Codes.tests.test_state.TestClientState.test_02_enter_and_leave_room)                                                                                                       
-Test entering and leaving a room, as well as host determination ... ok                                                  
-test_03_update_players_keep_score (Desktop.csi201-cw1-networked-quiz-main.Codes.tests.test_state.TestClientState.test_03_update_players_keep_score)                                                                                             
-Test that old scores are not accidentally reset when updating the player list ... ok                                    
-test_04_question_flow_and_duplicate_prevention (Desktop.csi201-cw1-networked-quiz-main.Codes.tests.test_state.TestClientState.test_04_question_flow_and_duplicate_prevention)                                                                   
-Test the flow of sending a question, answering, and revealing the answer ... ok                                         
-test_05_state_isolation (Desktop.csi201-cw1-networked-quiz-main.Codes.tests.test_state.TestClientState.test_05_state_isolation)                                                                                                                 
-Test that match data does not leak between rooms when switching rooms ... ok                                            
-test_06_thread_safe_snapshot (Desktop.csi201-cw1-networked-quiz-main.Codes.tests.test_state.TestClientState.test_06_thread_safe_snapshot)                                                                                                       
-Test snapshot deep copy, and that high-concurrency reads do not crash ... ok                                            
-                                                                                                                        
-----------------------------------------------------------------------                                                  
-Ran 6 tests in 0.214s                                                                                                   
-                                                                                                                        
-OK            
+test_01_connection_state (Desktop.csi201-cw1-networked-quiz-main.Codes.tests.test_state.TestClientState.test_01_connection_state)
+Test connection and disconnection state ... ok
+test_02_enter_and_leave_room (Desktop.csi201-cw1-networked-quiz-main.Codes.tests.test_state.TestClientState.test_02_enter_and_leave_room)
+Test entering and leaving a room, as well as host determination ... ok
+test_03_update_players_keep_score (Desktop.csi201-cw1-networked-quiz-main.Codes.tests.test_state.TestClientState.test_03_update_players_keep_score)
+Test that old scores are not accidentally reset when updating the player list ... ok
+test_04_question_flow_and_duplicate_prevention (Desktop.csi201-cw1-networked-quiz-main.Codes.tests.test_state.TestClientState.test_04_question_flow_and_duplicate_prevention)
+Test the flow of sending a question, answering, and revealing the answer ... ok
+test_05_state_isolation (Desktop.csi201-cw1-networked-quiz-main.Codes.tests.test_state.TestClientState.test_05_state_isolation)
+Test that match data does not leak between rooms when switching rooms ... ok
+test_06_thread_safe_snapshot (Desktop.csi201-cw1-networked-quiz-main.Codes.tests.test_state.TestClientState.test_06_thread_safe_snapshot)
+Test snapshot deep copy, and that high-concurrency reads do not crash ... ok
+test_07_v3_protocol_compatibility (Desktop.csi201-cw1-networked-quiz-main.Codes.tests.test_state.TestClientState.test_07_v3_protocol_compatibility)
+Test compatibility with v3 protocol: display_name and index mapping ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 0.196s
+
+OK     
