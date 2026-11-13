@@ -1,4 +1,3 @@
-import codecs
 from collections import deque
 import os
 import queue
@@ -247,8 +246,9 @@ class QuizCLI:
                 if response["ok"]:
                     self.write(f"[CONNECTED] {self.address[3]} ({self.address[2]})")
                 else:
-                    error = response.get("error") or {"code": "CONNECT_FAILED", "message": "Connection closed during login"}
-                    self.write(f"[ERROR] {error.get('code', 'CONNECT_FAILED')}: {error.get('message', 'Unknown error')}")
+                    raw_error = response.get("error") or {}
+                    detail = raw_error.get("error") or {"code": "CONNECT_FAILED", "message": "Connection closed during login"}
+                    self.write(f"[ERROR] {detail.get('code', 'CONNECT_FAILED')}: {detail.get('message', 'Unknown error')}")
                     self.exit_code, self.done = 1, True
             elif command == "quit":
                 self.write("Goodbye.")
@@ -317,7 +317,7 @@ class QuizCLI:
             elif event == "leaderboard":
                 self.write("[LEADERBOARD]")
                 for index, player in enumerate(data.get("leaderboard", []), 1):
-               
+                    
                     p_name = player.get("display_name", player.get("name", player.get("user_id")))
                     self.write(f"  {player.get('rank', index)}. {p_name} | {player['score']}")
                 self.write("Quiz finished. Use leave or quit.")
