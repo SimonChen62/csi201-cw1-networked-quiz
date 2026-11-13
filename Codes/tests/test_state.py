@@ -143,6 +143,37 @@ class TestClientState(unittest.TestCase):
         t1.join(); t2.join()
         # If no RuntimeError: dictionary changed size during iteration is raised, the snapshot mechanism works
 
+    def test_07_v3_protocol_compatibility(self):
+        """Test compatibility with v3 protocol: display_name and index mapping"""
+        # 1. Test player list reading display_name
+        players = [
+            {"user_id": "u1", "display_name": "Alice_v3", "ready": True}
+        ]
+        self.state.enter_room("room-v3", host_id="u1", players=players)
+        
+        # Internally, it should be automatically mapped to the name field
+        self.assertEqual(self.state.players_in_room["u1"].name, "Alice_v3")
+
+        # 2. Test question reading index
+        self.state.start_game()
+        q_data = {
+            "question_id": "q_v3",
+            "text": "Test v3 question",
+            "options": {"A": "1", "B": "2"},
+            "time_limit": 10,
+            "points": 50,
+            "index": 3  # v3 protocol field
+        }
+        self.state.set_question(q_data)
+        self.assertEqual(self.state.current_question.question_index, 3)
+
+        # 3. Test leaderboard reading display_name
+        leaderboard = [
+            {"user_id": "u1", "display_name": "Alice_v3", "score": 100, "rank": 1}
+        ]
+        self.state.finish_game(leaderboard)
+        self.assertEqual(self.state.final_leaderboard[0]["name"], "Alice_v3")
+
 
 if __name__ == "__main__":
     unittest.main()
