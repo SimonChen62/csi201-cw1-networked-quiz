@@ -1,5 +1,3 @@
-"""E's text UI. Blocking keyboard and request work never runs on the UI loop."""
-
 import codecs
 from collections import deque
 import os
@@ -8,8 +6,12 @@ import shlex
 import sys
 import threading
 
-from .connection import Connection
-from .state import ClientState
+try:
+    from .connection import Connection
+    from .state import ClientState
+except ImportError:
+    from connection import Connection
+    from state import ClientState
 
 
 HELP = """Commands:
@@ -245,9 +247,8 @@ class QuizCLI:
                 if response["ok"]:
                     self.write(f"[CONNECTED] {self.address[3]} ({self.address[2]})")
                 else:
-                    error = response.get("error") or {}
-                    error = error.get("error", {"code": "CONNECT_FAILED", "message": "Connection closed during login"})
-                    self.write(f"[ERROR] {error['code']}: {error['message']}")
+                    error = response.get("error") or {"code": "CONNECT_FAILED", "message": "Connection closed during login"}
+                    self.write(f"[ERROR] {error.get('code', 'CONNECT_FAILED')}: {error.get('message', 'Unknown error')}")
                     self.exit_code, self.done = 1, True
             elif command == "quit":
                 self.write("Goodbye.")
@@ -316,7 +317,9 @@ class QuizCLI:
             elif event == "leaderboard":
                 self.write("[LEADERBOARD]")
                 for index, player in enumerate(data.get("leaderboard", []), 1):
-                    self.write(f"  {player.get('rank', index)}. {player.get('name', player['user_id'])} | {player['score']}")
+               
+                    p_name = player.get("display_name", player.get("name", player.get("user_id")))
+                    self.write(f"  {player.get('rank', index)}. {p_name} | {player['score']}")
                 self.write("Quiz finished. Use leave or quit.")
             elif event == "demo_notice":
                 self.write("[DEMO] " + data.get("message", "Scripted test peer."))
