@@ -154,9 +154,10 @@ class ClientState:
             if uid:
                 # Retain score if server didn't send it in this update
                 old_score = self.players_in_room[uid].score if uid in self.players_in_room else 0
+                p_name = p.get("display_name", p.get("name", "Unknown"))
                 new_players[uid] = PlayerInfo(
                     user_id=uid,
-                    name=p.get("name", "Unknown"),
+                    name=p_name,
                     ready=p.get("ready", False),
                     score=p.get("score", old_score)
                 )
@@ -179,13 +180,15 @@ class ClientState:
                 return False
             self.room_phase = "RUNNING"
             # SECURITY: Strictly parse only approved fields. Ignore 'answer' even if accidentally sent.
+            q_index = q_data.get("index", q_data.get("question_index", 0))
+            
             self.current_question = QuestionInfo(
                 question_id=q_data.get("question_id", ""),
                 text=q_data.get("text", ""),
                 options=deepcopy(q_data.get("options", {})),
                 time_limit=q_data.get("time_limit", 15),
                 points=q_data.get("points", 100),
-                question_index=q_data.get("question_index", 0)
+                question_index=q_index
             )
             # New question arrived, allow user to answer
             self.has_answered_current_question = False
@@ -241,7 +244,16 @@ class ClientState:
             self.room_phase = "FINISHED"
             self.current_question = None
             self.has_answered_current_question = False
-            self.final_leaderboard = deepcopy(leaderboard)
+            
+            clean_leaderboard = []
+            for p in leaderboard:
+                clean_leaderboard.append({
+                    "user_id": p.get("user_id"),
+                    "name": p.get("display_name", p.get("name", "Unknown")),
+                    "score": p.get("score", 0),
+                    "rank": p.get("rank")
+                })
+            self.final_leaderboard = deepcopy(clean_leaderboard)
 
     def _reset_game_state_internal(self):
         """Helper: Clears game-specific data for isolation."""
@@ -269,7 +281,7 @@ class ClientState:
             if self.current_question:
                 q_copy = {
                     "id": self.current_question.question_id,
-                    "index": self.current_question.question_index,
+                    "index": self.current_question.question_index, 
                     "text": self.current_question.text,
                     "options": dict(self.current_question.options), # Copy dict
                     "time_limit": self.current_question.time_limit,
