@@ -1,15 +1,17 @@
-test_01_normal_connection (Desktop.csi201-cw1-networked-quiz-main.Codes.tests.test_connection.TestConnection.test_01_normal_connection)                                                                                                         
-Test normal connection and handshake ... ok                                                                             
-test_02_half_packet (Desktop.csi201-cw1-networked-quiz-main.Codes.tests.test_connection.TestConnection.test_02_half_packet)                                                                                                                     
-Test half-packet: the server splits one message into two segments, and the client should reassemble it correctly ... ok 
-test_03_event_and_response (Desktop.csi201-cw1-networked-quiz-main.Codes.tests.test_connection.TestConnection.test_03_event_and_response)                                                                                                       
-Test sticky packets and event dispatch: the server sends an event and a response together ... ok                        
-test_04_server_disconnect (Desktop.csi201-cw1-networked-quiz-main.Codes.tests.test_connection.TestConnection.test_04_server_disconnect)                                                                                                         
-Test sudden server disconnect: the request should return an error immediately to prevent deadlock ... ok                
-test_05_request_timeout (Desktop.csi201-cw1-networked-quiz-main.Codes.tests.test_connection.TestConnection.test_05_request_timeout)                                                                                                             
-Test request timeout: the server does not reply, and the client should return TIMEOUT after the timeout ... ok          
-                                                                                                                        
-----------------------------------------------------------------------                                                  
-Ran 5 tests in 0.896s                                                                                                   
-                                                                                                                        
-OK                        
+test_01_normal_connection (Desktop.csi201-cw1-networked-quiz-main.Codes.tests.test_connection.TestConnection.test_01_normal_connection)
+Test normal connection and handshake ... ok
+test_02_half_packet (Desktop.csi201-cw1-networked-quiz-main.Codes.tests.test_connection.TestConnection.test_02_half_packet)
+Test half-packet: the server splits one message into two segments, and the client should reassemble it correctly ... ok
+test_03_event_and_response (Desktop.csi201-cw1-networked-quiz-main.Codes.tests.test_connection.TestConnection.test_03_event_and_response)
+Test sticky packets and event dispatch: the server sends an event and a response together ... ok
+test_04_server_disconnect (Desktop.csi201-cw1-networked-quiz-main.Codes.tests.test_connection.TestConnection.test_04_server_disconnect)
+Test sudden server disconnect: the request should return an error immediately to prevent deadlock ... ok
+test_05_request_timeout (Desktop.csi201-cw1-networked-quiz-main.Codes.tests.test_connection.TestConnection.test_05_request_timeout)
+Test request timeout: the server does not reply, and the client should return TIMEOUT after the timeout ... ok
+test_06_local_error_response_format (Desktop.csi201-cw1-networked-quiz-main.Codes.tests.test_connection.TestConnection.test_06_local_error_response_format)
+Test that locally synthesized network errors use the unified 'response' envelope format ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.859s
+
+OK     
