@@ -14,10 +14,12 @@ from protocol import (
 )
 
 
-def error_response(request_id, code, message):
+def failure_response(request_id, code, message):
+    """失败与成功同构：都是 response，只有 ok 为假并带 error。"""
     return {
-        "type": "error",
+        "type": "response",
         "request_id": request_id,
+        "ok": False,
         "error": {"code": code, "message": message},
     }
 
@@ -164,7 +166,7 @@ class Server:
                 try:
                     frames = extract_messages(buffer)
                 except MessageTooLarge as exc:
-                    session.send(error_response(None, "MESSAGE_TOO_LARGE", str(exc)))
+                    session.send(failure_response(None, "MESSAGE_TOO_LARGE", str(exc)))
                     break
 
                 for frame in frames:
@@ -175,7 +177,7 @@ class Server:
                         if session.closed.is_set():
                             return
                         # encode wrong should not close socket
-                        fallback = error_response(None, "INTERNAL_ERROR", "cannot encode server response")
+                        fallback = failure_response(None, "INTERNAL_ERROR", "cannot encode server response")
                         if not session.send(fallback):
                             return
         finally:
@@ -198,7 +200,7 @@ class Server:
         try:
             message = decode_message(frame)
         except ProtocolError as exc:
-            return error_response(None, "MALFORMED_MESSAGE", str(exc))
+            return failure_response(None, "MALFORMED_MESSAGE", str(exc))
 
         return self.request_handler(session, message)
 
@@ -207,11 +209,11 @@ class Server:
     def handle_request(session, message):
         request_id = message.get("request_id")
         if message.get("type") != "echo":
-            return error_response(
+            return failure_response(
                 request_id, "UNKNOWN_COMMAND", str(message.get("type"))
             )
         if not isinstance(message.get("text"), str):
-            return error_response(
+            return failure_response(
                 request_id, "INVALID_MESSAGE", "text must be a string"
             )
         return {

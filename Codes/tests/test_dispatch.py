@@ -82,12 +82,12 @@ class DispatchTest(unittest.TestCase):
         server.sessions.update(sessions)
 
         with contextlib.redirect_stdout(io.StringIO()):
-            failed = server.broadcast_event(sessions[:3], "room_updated", {"room_id": "R1"})
+            failed = server.broadcast_event(sessions[:3], "room_update", {"room_id": "R1"})
 
         self.assertEqual(failed, [sessions[0]])
         for _, peer in pairs[1:3]:
             self.assertEqual(read_messages(peer, 1), [{
-                "type": "event", "event": "room_updated", "data": {"room_id": "R1"},
+                "type": "event", "event": "room_update", "data": {"room_id": "R1"},
             }])
         pairs[3][1].setblocking(False)
         with self.assertRaises(BlockingIOError):
@@ -102,7 +102,7 @@ class DispatchTest(unittest.TestCase):
         messages = [
             {"type": "event", "event": "demo_notice", "data": {}},
             {"type": "response", "request_id": 1, "ok": True, "data": {}},
-            {"type": "error", "request_id": 2, "error": {"code": "UNKNOWN_COMMAND"}},
+            {"type": "response", "request_id": 2, "ok": False, "error": {"code": "UNKNOWN_COMMAND"}},
         ]
         peer.sendall(b"".join(encode_message(message) for message in messages))
         # 如果错误地把 event 算作回复，客户端会提前返回，下面这个错误响应不会输出。
@@ -117,7 +117,7 @@ class DispatchTest(unittest.TestCase):
         self.assertEqual(len(lines), 3)
         self.assertTrue(lines[0].startswith("收到事件："))
         self.assertTrue(lines[1].startswith("收到响应："))
-        self.assertTrue(lines[2].startswith("收到错误："))
+        self.assertTrue(lines[2].startswith("收到失败："))
         self.assertEqual(json.loads(lines[2].split("：", 1)[1]), messages[2])
 
 

@@ -14,3 +14,5 @@ env/
 *.pcapng
 Coursework I Task Sheet.pdf
 .DS_Store
+output/
+.workbuddy/

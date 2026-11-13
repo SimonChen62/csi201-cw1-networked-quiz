@@ -24,8 +24,8 @@ def receive_replies(connection, expected_replies):
             text = json.dumps(message, ensure_ascii=False)
             if message.get("type") == "event":
                 print(f"收到事件：{text}")
-            elif message.get("type") in ("response", "error"):
-                label = "收到响应" if message["type"] == "response" else "收到错误"
+            elif message.get("type") == "response":
+                label = "收到响应" if message.get("ok") else "收到失败"
                 print(f"{label}：{text}")
                 replies += 1
             else:
