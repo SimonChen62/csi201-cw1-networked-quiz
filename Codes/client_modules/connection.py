@@ -1,5 +1,3 @@
-"""D's TCP client, with response/state hand-off used by E's CLI."""
-
 from dataclasses import dataclass, field
 from pathlib import Path
 import queue
