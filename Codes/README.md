@@ -1,6 +1,6 @@
 # Networked Quiz Tournament — 运行与提交说明
 
-2026-11-14 整合版本：基于 main@44cb8c0 和 B 分支@85ddeb9，接通 A 网络层、B 题库/大厅、C 比赛引擎及 D/E 正式客户端。145 项测试通过，含真实客户端双人比赛、十客户端双房间、计时和异常关闭。全组人工复核、报告定稿和视频仍待完成。
+2026-11-15 整合版本：基于 main@44cb8c0 和 B 分支@5dc1ed1，接通 A 网络层、B 题库/大厅、C 比赛引擎及 D/E 正式客户端。146 项测试通过，含真实客户端双人比赛、十客户端双房间、计时和异常关闭。全组人工复核、报告定稿和视频仍待完成。
 
 ## 1. 环境和启动
 
@@ -107,7 +107,7 @@ $codePath = (Get-Location).Path
 docker run --rm --network none --env PYTHONPYCACHEPREFIX=/tmp/test-pycache --mount "type=bind,source=$codePath,target=/code,readonly" csi201-cw1:verify-20261112 -X utf8 -B -m unittest discover -s tests -v
 ~~~
 
-2026-11-14 本轮 145 项全部通过（38.408 秒）。其中 test_paired_system.py 运行正式 server.py / client.py：原题库双人完整比赛、老师 50 题登录/目录、十客户端全程双房间、另一次十客户端中途断线隔离，以及诊断对端的限时/非法报文/关闭检查。5 秒限时实测 5.001 秒。所有控制输入由测试驱动写入真实客户端 stdin，不以假客户端替代十进程验收；异常报文另用诊断 TCP 对端注入。
+2026-11-15 本轮 146 项全部通过（36.990 秒）。其中 test_paired_system.py 运行正式 server.py / client.py：原题库双人完整比赛、老师 50 题登录/目录、十客户端全程双房间、另一次十客户端中途断线隔离，以及诊断对端的限时/非法报文/关闭检查。5 秒限时实测 5.002 秒。所有控制输入由测试驱动写入真实客户端 stdin，不以假客户端替代十进程验收；异常报文另用诊断 TCP 对端注入。
 
 测试默认写临时目录；设置 QUIZ_EVIDENCE_DIR 可保存实际终端日志和该次题库。并发与超时场景使用基于默认题库生成、每题 5 秒的合法临时数据；双人场景直接使用未改动的 questions.json，50 题场景使用原 questions_50.json。仓库 docs/evidence 保存日志；最终报告应选取必要结果，不把开发目录全部打包。
 

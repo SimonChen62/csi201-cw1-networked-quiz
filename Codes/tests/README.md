@@ -1,6 +1,6 @@
-# 测试说明（2026-11-14）
+# 测试说明（2026-11-15）
 
-在课程容器 Codes 目录执行 python3 -B -m unittest discover -s tests -v。本轮 145 项测试通过，用时 38.408 秒。详细运行命令见 [README.md](../README.md)。
+在课程容器 Codes 目录执行 python3 -B -m unittest discover -s tests -v。本轮 146 项测试通过，用时 36.990 秒。详细运行命令见 [README.md](../README.md)。
 
 | 范围 | 文件 | 证据性质 |
 | --- | --- | --- |
@@ -8,7 +8,7 @@
 | D 通信/状态 13 项 | test_connection.py、test_state.py | 请求、事件、分片、超时、状态隔离 |
 | 已有 D/E 14 项 | test_client_regressions.py、test_cli.py | 客户端回归、真实 CLI 连接脚本对端；不是整机验收 |
 | B 题库 31 项 | test_question_bank.py | typed 题库、schema、数量/类型/范围、公开目录 |
-| B 大厅 38 项 | test_lobby.py | 身份、房间、ready/host、退出；使用 StubEngine |
+| B 大厅 39 项 | test_lobby.py | 身份、房间、ready/host、退出；使用 StubEngine |
 | C 引擎 7 项 | test_game_engine.py | 计时、计分、拒绝重复/迟到、排名与状态隔离 |
 | 整合回归 8 项 | test_integration_regressions.py | 加载边界、校验先于 socket、开赛并发窗口、发送失败和计时器停止 |
 | 正式配对系统 5 项 | test_paired_system.py | 真实 server.py/client.py 子进程，详见下方 |

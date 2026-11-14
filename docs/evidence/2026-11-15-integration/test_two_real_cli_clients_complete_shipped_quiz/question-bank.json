@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "quizzes": [
+    {
+      "quiz_id": "network-basics",
+      "title": "Networking Fundamentals",
+      "description": "Introductory networking questions",
+      "questions": [
+        {"question_id": "NET001", "text": "Which transport protocol provides reliable byte-stream delivery?", "options": {"A": "UDP", "B": "TCP", "C": "ARP", "D": "ICMP"}, "answer": "B", "time_limit": 15, "points": 100},
+        {"question_id": "NET002", "text": "Which device forwards packets between IP networks?", "options": {"A": "Router", "B": "Hub", "C": "Repeater", "D": "Patch panel"}, "answer": "A", "time_limit": 15, "points": 100},
+        {"question_id": "NET003", "text": "Which protocol maps a domain name to an IP address?", "options": {"A": "DHCP", "B": "HTTP", "C": "DNS", "D": "FTP"}, "answer": "C", "time_limit": 15, "points": 100},
+        {"question_id": "NET004", "text": "How many bits are in an IPv4 address?", "options": {"A": "16", "B": "32", "C": "64", "D": "128"}, "answer": "B", "time_limit": 15, "points": 100},
+        {"question_id": "NET005", "text": "Which layer provides end-to-end process communication?", "options": {"A": "Physical", "B": "Data link", "C": "Network", "D": "Transport"}, "answer": "D", "time_limit": 15, "points": 100}
+      ]
+    },
+    {
+      "quiz_id": "python-networking",
+      "title": "Python Networking",
+      "description": "Python standard library networking questions",
+      "questions": [
+        {"question_id": "PYNET001", "text": "Which Python module provides raw TCP sockets?", "options": {"A": "socket", "B": "json", "C": "pathlib", "D": "signal"}, "answer": "A", "time_limit": 15, "points": 100},
+        {"question_id": "PYNET002", "text": "Which method accepts a pending server connection?", "options": {"A": "bind", "B": "listen", "C": "accept", "D": "connect"}, "answer": "C", "time_limit": 15, "points": 100},
+        {"question_id": "PYNET003", "text": "What does TCP provide to applications?", "options": {"A": "A datagram service", "B": "A byte stream", "C": "A file system", "D": "A database"}, "answer": "B", "time_limit": 15, "points": 100},
+        {"question_id": "PYNET004", "text": "Which format is used by this project for messages?", "options": {"A": "XML", "B": "CSV", "C": "JSON", "D": "HTML"}, "answer": "C", "time_limit": 15, "points": 100},
+        {"question_id": "PYNET005", "text": "Which character terminates one JSON-lines message?", "options": {"A": "A space", "B": "A comma", "C": "A colon", "D": "A newline"}, "answer": "D", "time_limit": 15, "points": 100}
+      ]
+    }
+  ]
+}

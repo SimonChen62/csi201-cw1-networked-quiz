@@ -1,6 +1,6 @@
 # Implemented application-layer protocol (v3 integration)
 
-Version: 2026-11-14. This records the implemented protocol and team-selected rules. The coursework appendix is informative; the compulsory question-bank schema remains authoritative. Group review of this implementation is still required.
+Version: 2026-11-15. This records the implemented protocol and team-selected rules. The coursework appendix is informative; the compulsory question-bank schema remains authoritative. Group review of this implementation is still required.
 
 ## 1. Transport and envelopes
 
@@ -33,7 +33,7 @@ Fields below are alongside type/request_id. Success values are inside data.
 | start_game | room_id | empty object; question event follows or precedes reply |
 | answer | room_id, question_id, choice (A/B/C/D) | accepted: true |
 | leave_room | room_id | empty object |
-| quit | none | bye: true; client then closes connection |
+| quit | none | bye: true; identity/seat released, then client closes connection |
 | echo | text | text; development diagnostic |
 
 Only hello, echo and quit are available before login. Active user IDs are unique. A session logs in once. IDs are 1–64 printable characters without surrounding whitespace; display names are trimmed, nonblank and at most 64 printable characters. Repeated display names are allowed.

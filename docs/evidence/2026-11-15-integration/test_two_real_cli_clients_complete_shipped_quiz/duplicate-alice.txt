@@ -1,0 +1,4 @@
+Networked Quiz Tournament | Type help for commands.
+Connecting to 127.0.0.1:45351 ...
+[ERROR] DUPLICATE_USER: user_id 'alice' is already active
+PROCESS_EXIT=1

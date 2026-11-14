@@ -1,0 +1,116 @@
+Networked Quiz Tournament | Type help for commands.
+Connecting to 127.0.0.1:34185 ...
+[CONNECTED] b3 (b3)
+[ROOM R2] quiz=python-networking state=WAITING host=b0
+  b0 | b0 | ready=False | score=0
+  b1 | b1 | ready=False | score=0
+  b2 | b2 | ready=False | score=0
+  b3 | b3 | ready=False | score=0
+[ROOM R2] quiz=python-networking state=WAITING host=b0
+  b0 | b0 | ready=False | score=0
+  b1 | b1 | ready=False | score=0
+  b2 | b2 | ready=False | score=0
+  b3 | b3 | ready=False | score=0
+  b4 | b4 | ready=False | score=0
+[ROOM R2] quiz=python-networking state=WAITING host=b0
+  b0 | b0 | ready=True | score=0
+  b1 | b1 | ready=False | score=0
+  b2 | b2 | ready=False | score=0
+  b3 | b3 | ready=False | score=0
+  b4 | b4 | ready=False | score=0
+[ROOM R2] quiz=python-networking state=WAITING host=b0
+  b0 | b0 | ready=True | score=0
+  b1 | b1 | ready=True | score=0
+  b2 | b2 | ready=False | score=0
+  b3 | b3 | ready=False | score=0
+  b4 | b4 | ready=False | score=0
+[ROOM R2] quiz=python-networking state=WAITING host=b0
+  b0 | b0 | ready=True | score=0
+  b1 | b1 | ready=True | score=0
+  b2 | b2 | ready=True | score=0
+  b3 | b3 | ready=False | score=0
+  b4 | b4 | ready=False | score=0
+[ROOM R2] quiz=python-networking state=WAITING host=b0
+  b0 | b0 | ready=True | score=0
+  b1 | b1 | ready=True | score=0
+  b2 | b2 | ready=True | score=0
+  b3 | b3 | ready=True | score=0
+  b4 | b4 | ready=False | score=0
+[ROOM R2] quiz=python-networking state=WAITING host=b0
+  b0 | b0 | ready=True | score=0
+  b1 | b1 | ready=True | score=0
+  b2 | b2 | ready=True | score=0
+  b3 | b3 | ready=True | score=0
+  b4 | b4 | ready=False | score=0
+[ROOM R2] quiz=python-networking state=WAITING host=b0
+  b0 | b0 | ready=True | score=0
+  b1 | b1 | ready=True | score=0
+  b2 | b2 | ready=True | score=0
+  b3 | b3 | ready=True | score=0
+  b4 | b4 | ready=True | score=0
+[QUESTION PYNET001] Which Python module provides raw TCP sockets?
+  A. socket
+  B. json
+  C. pathlib
+  D. signal
+Limit: 5 seconds | Points: 100
+Use: answer PYNET001 <A|B|C|D>
+[RESULT PYNET001] Correct: A | Your total: 0
+[QUESTION PYNET002] Which method accepts a pending server connection?
+  A. bind
+  B. listen
+  C. accept
+  D. connect
+Limit: 5 seconds | Points: 100
+Use: answer PYNET002 <A|B|C|D>
+[ANSWER PYNET001] Submission accepted. Result follows when the question closes.
+[RESULT PYNET002] Correct: C | Your total: 0
+[QUESTION PYNET003] What does TCP provide to applications?
+  A. A datagram service
+  B. A byte stream
+  C. A file system
+  D. A database
+Limit: 5 seconds | Points: 100
+Use: answer PYNET003 <A|B|C|D>
+[ANSWER PYNET002] Submission accepted. Result follows when the question closes.
+[RESULT PYNET003] Correct: B | Your total: 0
+[QUESTION PYNET004] Which format is used by this project for messages?
+  A. XML
+  B. CSV
+  C. JSON
+  D. HTML
+Limit: 5 seconds | Points: 100
+Use: answer PYNET004 <A|B|C|D>
+[ANSWER PYNET003] Submission accepted. Result follows when the question closes.
+[RESULT PYNET004] Correct: C | Your total: 0
+[QUESTION PYNET005] Which character terminates one JSON-lines message?
+  A. A space
+  B. A comma
+  C. A colon
+  D. A newline
+Limit: 5 seconds | Points: 100
+Use: answer PYNET005 <A|B|C|D>
+[ANSWER PYNET004] Submission accepted. Result follows when the question closes.
+[RESULT PYNET005] Correct: D | Your total: 0
+[LEADERBOARD]
+  1. b0 | 0
+  2. b1 | 0
+  3. b2 | 0
+  4. b3 | 0
+  5. b4 | 0
+Quiz finished. Use leave or quit.
+[ANSWER PYNET005] Submission accepted. Result follows when the question closes.
+[ROOM R2] quiz=python-networking state=FINISHED host=b1
+  b1 | b1 | ready=True | score=0
+  b2 | b2 | ready=True | score=0
+  b3 | b3 | ready=True | score=0
+  b4 | b4 | ready=True | score=0
+[ROOM R2] quiz=python-networking state=FINISHED host=b2
+  b2 | b2 | ready=True | score=0
+  b3 | b3 | ready=True | score=0
+  b4 | b4 | ready=True | score=0
+[ROOM R2] quiz=python-networking state=FINISHED host=b3
+  b3 | b3 | ready=True | score=0
+  b4 | b4 | ready=True | score=0
+Goodbye.
+PROCESS_EXIT=0
