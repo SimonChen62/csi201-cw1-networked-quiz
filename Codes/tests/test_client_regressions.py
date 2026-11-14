@@ -59,7 +59,7 @@ class ClientIntegrationRegressionTest(unittest.TestCase):
 
     def test_server_error_is_returned_and_pending_request_is_removed(self):
         connection, _ = self.make_connection(lambda request: [{
-            "type": "error", "request_id": request["request_id"],
+            "type": "response", "request_id": request["request_id"], "ok": False,
             "error": {"code": "ROOM_NOT_FOUND", "message": "Missing room"},
         }])
         response = connection.send_request("join_room", {"room_id": "missing"}, timeout=0.5)
@@ -108,7 +108,7 @@ class ClientIntegrationRegressionTest(unittest.TestCase):
 
     def test_error_does_not_undo_an_accepted_answer(self):
         connection, state = self.make_connection(lambda request: [{
-            "type": "error", "request_id": request["request_id"],
+            "type": "response", "request_id": request["request_id"], "ok": False,
             "error": {"code": "DUPLICATE_ANSWER", "message": "Already answered"},
         }])
         state.set_question(question())

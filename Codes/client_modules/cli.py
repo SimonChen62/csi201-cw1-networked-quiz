@@ -1,3 +1,4 @@
+import codecs
 from collections import deque
 import os
 import queue

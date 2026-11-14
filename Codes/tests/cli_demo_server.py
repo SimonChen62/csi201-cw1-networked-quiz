@@ -59,7 +59,8 @@ class DemoSession:
             self.send({"type": "response", "request_id": request_id, "ok": True, "data": data or {}})
 
         def error(code, message):
-            self.send({"type": "error", "request_id": request_id, "error": {"code": code, "message": message}})
+            self.send({"type": "response", "request_id": request_id, "ok": False,
+                       "error": {"code": code, "message": message}})
 
         with self.lock:
             command = request.get("type")
