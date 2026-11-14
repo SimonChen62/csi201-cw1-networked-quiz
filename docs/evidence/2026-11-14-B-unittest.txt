@@ -1,0 +1,21 @@
+# 2026-11-14 成员 B 单元测试原始输出
+# 环境：本机 Windows，宿主 Python 3.13.18，非考官镜像
+# 分支：feat/b-question-bank-lobby  提交：85ddeb9
+
+## test_question_bank.py
+
+$ python -m unittest discover -s tests -p "test_question_bank.py"
+...............................
+----------------------------------------------------------------------
+Ran 31 tests in 0.351s
+
+OK
+
+## test_lobby.py
+
+$ python -m unittest discover -s tests -p "test_lobby.py"
+......................................
+----------------------------------------------------------------------
+Ran 38 tests in 0.025s
+
+OK
