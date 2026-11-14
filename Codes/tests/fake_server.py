@@ -9,7 +9,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from protocol import encode_message, extract_messages, decode_message
 
 class FakeServer(threading.Thread):
-    def __init__(self, mode: str = "normal", port: int = 5001):
+    def __init__(self, mode: str = "normal", port: int = 0):
         super().__init__(daemon=True)
         self.mode = mode
         self.server_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -40,8 +40,29 @@ class FakeServer(threading.Thread):
                     req = decode_message(frame)
                     req_id = req.get("request_id", "1")
 
-                    if self.mode == "normal":
-                        resp = encode_message({"type": "response", "request_id": req_id, "ok": True, "data": {}})
+                    if self.mode == "disconnect":
+                        # Close while a request is pending, rather than timing out
+                        # or racing the client's initial send.
+                        return
+                    if self.mode == "timeout":
+                        continue
+                    data = {"msg": "hello"} if req.get("type") == "ping" else {}
+                    resp = encode_message({"type": "response", "request_id": req_id, "ok": True, "data": data})
+                    if self.mode == "half_packet":
+                        midpoint = len(resp) // 2
+                        conn.sendall(resp[:midpoint])
+                        time.sleep(0.05)
+                        conn.sendall(resp[midpoint:])
+                    elif self.mode == "event_and_response" and req.get("type") == "list_rooms":
+                        event = encode_message({
+                            "type": "event", "event": "room_update",
+                            "data": {
+                                "room_id": "r1",
+                                "players": [{"user_id": "u2", "name": "Bob", "ready": False}],
+                            },
+                        })
+                        conn.sendall(event + resp)
+                    else:
                         conn.sendall(resp)
         finally:
             if conn:

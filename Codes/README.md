@@ -2,9 +2,9 @@
 
 本文说明 A 提供的服务端网络层、各角色如何调用，以及当前尚未完成的联调事项。以当前 `server.py`、`protocol.py` 为准；分工依据是项目根目录的《CW1_系统流程与五人分工计划.md》。
 
-**当前是供全组接入的开发版本。** A 的网络层、D 的客户端通信/状态，以及 E 的客户端入口和 CLI 已有实现。B/C 的业务模块仍为占位内容，正式服务器仍待接线。E 的 CLI 可先用脚本对端试用，见 [客户端操作说明](../docs/E_client_guide.md) 和 [D/E 接口表](../CW1_D与E接口确定表.md)。
+**当前是供全组接入的开发版本（2026-11-14）。** A 的网络层、C 的比赛引擎/计分、D 的客户端通信/状态，以及 E 的客户端入口和 CLI 已有实现。本分支在 `main@ca447f0` 上补齐题库加载与完整校验，加入老师提供的 50 题文件。正式入口现可加载题库并输出 `SERVER_READY`；`lobby.py` 仍为空壳，登录/房间/比赛业务尚未装配。客户端试用见 [操作说明](../docs/E_client_guide.md) 和 [D/E 接口表](../CW1_D与E接口确定表.md)。
 
-2026-11-12 在本机 `csi201:latest` 容器（Python 3.12.14）中运行了全部 **54 项测试，均通过**，见 [验证范围和限制](../docs/evidence/2026-11-12-e-cli-validation.md) 与 [原始输出](../docs/evidence/2026-11-12-e-cli-docker-unittest.txt)。镜像是否来自课程官方材料尚待确认。测试包含模拟业务对端，不能据此认定完整比赛或双房间验收完成。
+2026-11-14 在按老师提供的 Dockerfile 构建的镜像（本机标签 `csi201-cw1:verify-20261112`，Python 3.12.16）中，**84 项测试全部通过**，其中新增题库测试 21 项。另已实测真实入口加载 50 题、TCP echo、SIGINT 退出及错误题库拒绝；`hello` 仍返回 `UNKNOWN_COMMAND`。见 [本轮进展和环境证据](../docs/evidence/2026-11-14-question-bank-validation.md)、[测试原始输出](../docs/evidence/2026-11-14-question-bank-unittest.txt) 和 [启动原始输出](../docs/evidence/2026-11-14-question-bank-startup.txt)。这些结果不代表完整比赛或十客户端双房间验收完成。
 
 ## 1. A 已实现的内容
 
@@ -30,7 +30,7 @@ A 不负责题库完整 schema 校验、登录和房间业务、计时判分、�
 | --- | --- | --- |
 | B | 题库校验、用户、房间、大厅、ready、host | 提供 `load_question_bank(path)`；业务请求通过 `request_handler(session, message)` 交接；断线时清理身份和房间 |
 | C | 比赛线程、发题、计时、答案、分数和排行榜 | 请求处理器把比赛命令交给 C；C 用 `send_event()` / `broadcast_event()` 发布公开数据；断线回调更新比赛状态 |
-| D | 正式客户端网络、接收线程、客户端状态 | 复用 `protocol.py`；区分 `response`、`error`、`event`，用 `request_id` 匹配回复 |
+| D | 正式客户端网络、接收线程、客户端状态 | 复用 `protocol.py`；区分 `response` 和 `event`，用 `request_id` 匹配回复，用 `ok` 判断成功/失败 |
 | E | CLI 和整体组装 | 通过 D 的接口收发、显示信息；在服务端入口把 B/C 的处理函数传入 `Server`，保留校验后监听和关闭流程 |
 
 `Server.sessions` 是 **ClientSession 对象的集合**，用于网络管理，不是按用户 ID 索引的身份表。B 应自行维护用户 ID、显示名、所在房间与连接对象的对应关系。当前 `ClientSession` 只有连接、地址、发送锁和关闭状态，没有预置 `user_id`、`name`、`current_room_id` 字段。
@@ -45,37 +45,43 @@ A 不负责题库完整 schema 校验、登录和房间业务、计时判分、�
 | --- | --- | --- |
 | 当前可用请求 | `{"type":"echo","request_id":1,"text":"hello"}` | 默认服务器只实现此教学命令 |
 | 成功回复 | `{"type":"response","request_id":1,"ok":true,"data":{"text":"hello"}}` | 对应一条请求 |
-| 错误回复 | `{"type":"error","request_id":1,"error":{"code":"UNKNOWN_COMMAND","message":"unknown"}}` | 对应失败请求；无法识别请求编号时为 `null` |
+| 错误回复 | `{"type":"response","request_id":1,"ok":false,"error":{"code":"UNKNOWN_COMMAND","message":"unknown"}}` | 对应失败请求；无法识别请求编号时为 `null` |
 | 主动事件 | `{"type":"event","event":"room_updated","data":{"room_id":"R1"}}` | 不带请求编号，不计作某次请求的回复 |
 
 `hello`、`list_quizzes`、`join_room`、`answer`、`question_open` 等是待业务层接入的名称。默认处理器遇到非 `echo` 命令会返回 `UNKNOWN_COMMAND`；上表的 `room_updated` 用于说明事件封装。
 
-`error_response(request_id, code, message)` 在 `server.py` 中，返回上述错误字典，不发送消息。`code` 和 `message` 建议使用字符串；请求编号无法可靠取得时传 `None`。
+`failure_response(request_id, code, message)` 在 `server.py` 中，返回上述错误字典，不发送消息。`code` 和 `message` 建议使用字符串；请求编号无法可靠取得时传 `None`。
 
 当前网络层使用 `MALFORMED_MESSAGE`、`MESSAGE_TOO_LARGE`，默认 echo 处理器使用 `UNKNOWN_COMMAND`、`INVALID_MESSAGE`。回复编码失败会尝试发送编号为 `null` 的 `INTERNAL_ERROR`。业务错误码仍需 B/C 与 D/E 统一；D 对编号为 `null` 的错误应显示或记录，不能随意匹配到某条待处理请求。
 
-## 4. B：题库加载接口
+## 4. 题库加载接口（本分支已实现，供 B/C 接入）
 
-B 在 `server_modules/question_bank.py` 中提供：
+E 按本轮补齐要求实现 `server_modules/question_bank.py`；B 后续维护题库与大厅接口，C 直接使用已验证的题目列表：
 
 ```python
-# 接口约定，当前占位文件尚未实现。
-def load_question_bank(path):
-    """读取并完整验证题库；成功返回非 None 的内存对象，失败抛出异常。"""
-    raise NotImplementedError("由 B 实现完整题库校验")
+from server_modules.question_bank import load_question_bank
+
+bank = load_question_bank("questions_50.json")
+quizzes = bank["quizzes"]  # 保持文件顺序；每项含 quiz_id/title/description/questions
+questions = quizzes[0]["questions"]  # 含正确答案，只能保留在服务端
 ```
 
-| 项目 | 约定 |
+| 项目 | 当前行为 |
 | --- | --- |
-| 输入 `path` | `str`，来自服务器启动参数 `--questions`；可以传给 `pathlib.Path` |
-| 成功返回 | 非 `None` 的已验证题库对象；具体结构由 B 与 C 约定，A 保存为 `server.question_bank` |
-| 失败 | 文件问题抛出 `OSError` 或其子类；数据/格式问题统一抛出 `ValueError` 或其子类，附明确诊断 |
-| A 的处理 | 在 `main()` 创建 `Server` 前调用；捕获 `ImportError`、`OSError`、`ValueError`，打印错误并返回退出码 1 |
-| 监听时机 | 验证成功后才调用 `serve_forever()` 创建 socket、绑定并监听，再打印 `SERVER_READY <host> <port>` |
+| 输入 `path` | `str` 或 `pathlib.Path`，来自启动参数 `--questions` |
+| 成功返回 | 顶层 `dict`：`schema_version`、`quizzes`，保留数组顺序及额外成员；A 保存为 `server.question_bank` |
+| 失败 | 文件访问错误抛 `OSError`；编码、JSON、字段问题抛 `ValueError`，指出文件或字段位置 |
+| 文件 | 非空 UTF-8 JSON，接受开头的 BOM；上限按 1,048,576 字节解释，读取量有上限 |
+| 顶层 | 对象；`schema_version` 为整数 1；`quizzes` 为 1～20 项数组 |
+| 每套测验 | ID 为 1～32 个 ASCII 字母、数字、下划线或短横线，测验 ID 唯一；标题 1～100 字符，描述 0～300 字符；5～50 题 |
+| 每题 | 题目 ID 在整份文件唯一、格式同测验 ID；文本 1～500 字符；选项键恰好 A/B/C/D，每项 1～200 字符；答案 A/B/C/D |
+| 数值 | `time_limit` 为整数 5～60，`points` 为整数 1～1000；布尔值和浮点数不作为整数 |
+| 文本与扩展 | 标题、描述、题目使用可打印字符，必填文本不能全为空白；除 `options` 外允许额外成员 |
+| 启动顺序 | 完整校验全部测验/题目后才创建 `Server`、绑定监听并打印 `SERVER_READY`；失败退出码 1，不创建 socket |
 
-不要把示例中的 `NotImplementedError` 当作正式实现：A 的入口没有将它转换成题库校验错误。B 应实现作业文档规定的全部规则，包括文件大小、schema、字段类型与范围、ID 唯一性等。
+仓库保留原有 `questions.json`（2 套 × 5 题），新增 `questions_50.json`（5 套 × 10 题），后者与老师提供的文件字节一致；通过 `--questions` 选择。加载器接受规范允许的单套测验；“最终提交至少 2 套”是提交材料要求，不能因此拒绝合法的单套替换题库。
 
-**只有服务器读取题库。** 文件路径不由客户端发送。A 不会再次验证返回对象的完整 schema，因此加载函数必须负责完整校验。题库对象不会因传给 `Server` 就自动接入大厅和比赛；业务处理器仍需持有或访问它。
+**只有服务器读取题库。** 不把完整 `bank`、`quiz` 或题目对象直接发给客户端。大厅目录仅构造 `quiz_id/title/description/question_count` 等公开字段；发题时排除 `answer`，关题后才能揭晓。加载器不实现这些业务消息，仍需 B/C 按第 5 节接入处理器。
 
 ## 5. B/C：请求处理接口
 
@@ -99,10 +105,10 @@ Server(host, port, request_handler=None, on_disconnect=None, question_bank=None)
 - `message` 是解码后的 Python `dict`。A 已处理 TCP 分帧与 JSON 解码，不需要再 `recv()` 或 `json.loads()`。
 - 返回一个成功或错误回复字典。A 随后调用 `session.send(response)` 发送；**处理器不要再发送同一条普通回复**，否则客户端会收到两份。
 - 当前接口不支持通过返回 `None` 表示“我已自行回复”。每次调用都应返回一个合法回复对象。
-- 成功回复至少按第 3 节提供 `type`、`request_id`、`ok`、`data`；错误回复提供 `type`、`request_id` 和含 `code/message` 的 `error`。A 不会自动补齐或检查业务回复结构，能 JSON 编码也不代表字段正确。
+- 成功回复至少按第 3 节提供 `type`、`request_id`、`ok`、`data`；错误回复也使用 `type=response`，提供 `request_id`、`ok=false` 和含 `code/message` 的 `error`。A 不会自动补齐或检查业务回复结构，能 JSON 编码也不代表字段正确。
 - 函数在该客户端的接收线程中运行；不同客户端会并发调用它。共享用户/房间状态由 B/C 使用自己的锁保护。
 - `hello`、大厅命令和比赛命令的路由由这个统一处理函数组织，不是分别给 `Server` 传两个 request handler。
-- 业务预期错误应返回 `error_response(...)`；当前 `process_frame()` 不会统一捕获业务函数抛出的任意异常，异常会使该客户端线程进入清理流程。
+- 业务预期错误应返回 `failure_response(...)`；当前 `process_frame()` 不会统一捕获业务函数抛出的任意异常，异常会使该客户端线程进入清理流程。
 - 启动比赛时创建/通知 C 的比赛线程后尽快返回，不要让接收线程等待整场比赛，否则此连接无法继续处理答题请求。
 
 ### 可运行的回调接入示例
@@ -237,7 +243,7 @@ connection.sendall(encode_message({
 
 如果 D 的多个线程都可能发送请求，也应在客户端为该 socket 提供一把发送锁，保护一次完整的 `sendall(encode_message(request))`。`protocol.py` 只编解码，没有内置发送锁；服务端的 `session.send_lock` 不保护客户端进程的写入。
 
-D 按 `message["type"]` 区分回复与事件：`response/error` 用 `request_id` 匹配待处理请求，`event` 按 `event` 字段更新状态并通知 E。事件不能算作某条请求的回复。`recv()` 返回空 bytes 时处理服务器关闭。E 通过 D 的客户端接口显示菜单、题目和结果，不能调用服务端进程中的 `session.send_event()`。
+D 按 `message["type"]` 区分回复与事件：`response` 用 `request_id` 匹配待处理请求，再检查 `ok`；`event` 按 `event` 字段更新状态并通知 E。事件不能算作某条请求的回复。`recv()` 返回空 bytes 时处理服务器关闭。E 通过 D 的客户端接口显示菜单、题目和结果，不能调用服务端进程中的 `session.send_event()`。
 
 `tests/server_temp_test.py` 只发 echo、显示消息、等预期回复数量后退出，不是正式客户端，也没有长期事件循环或完整请求编号匹配表。
 
@@ -261,31 +267,33 @@ python Codes/tests/server_temp_test.py --message "hello" --message "second" --se
 
 ### 老师 Docker 环境
 
-以下是 A 的历史测试命令，`csi201-cw1:latest` 是当时本机标签，不能仅凭名称认定为官方镜像；不要用仓库自带 Dockerfile 替代课程环境。每位成员先确认镜像来源、入口和挂载路径。E 本轮实际使用 `csi201:latest`，可复现命令见 [11-12 验证记录](../docs/evidence/2026-11-12-e-cli-validation.md)。
+本轮使用老师提供的 Dockerfile 构建镜像，本机标签为 `csi201-cw1:verify-20261112`，入口为 Python。组员先在自己的老师环境目录构建镜像，并将以下标签换成自己的实际标签；它不是公共镜像下载地址。来源、文件校验值及镜像 ID 见 [环境记录](../docs/evidence/2026-11-14-question-bank-validation.md)。
 
-窗口一：
+先在 PowerShell 进入本仓库的 `Codes` 文件夹。窗口一加载 50 题题库：
 
 ```powershell
-docker run --rm -it --name cw1-a-test --mount "type=bind,source=D:\Y3\csi201\cw1\Codes,target=/code" csi201-cw1:latest server.py --host 127.0.0.1 --port 5000 --lab-mode
+$codePath = (Get-Location).Path
+docker run --rm -it --name cw1-bank-check --mount "type=bind,source=$codePath,target=/code,readonly" csi201-cw1:verify-20261112 server.py --host 127.0.0.1 --port 5000 --questions questions_50.json
 ```
 
 窗口二：
 
 ```powershell
-docker exec cw1-a-test python tests/server_temp_test.py --message "hello" --message "second" --send-malformed
+docker exec cw1-bank-check python tests/server_temp_test.py --message "hello" --message "second" --send-malformed
 ```
 
-这两个进程运行在同一容器，用容器内回环地址通信，不需要端口映射。命令按当前本机镜像以 Python 为 ENTRYPOINT 的方式编写；不要在 `docker run` 的镜像名后重复加 `python`。
+这两个进程运行在同一容器，用容器内回环地址通信，不需要端口映射。窗口二只验证 echo 和坏消息，不代表登录/比赛可用；窗口一显示 `SERVER_READY` 后可按 Ctrl+C 退出。镜像以 Python 为 ENTRYPOINT，不要在 `docker run` 的镜像名后重复加 `python`。
 
 自动测试：
 
 ```powershell
-docker run --rm --mount "type=bind,source=D:\Y3\csi201\cw1\Codes,target=/code" csi201-cw1:latest -m unittest discover -s tests -v
+$codePath = (Get-Location).Path
+docker run --rm --network none --env PYTHONPYCACHEPREFIX=/tmp/test-pycache --mount "type=bind,source=$codePath,target=/code,readonly" csi201-cw1:verify-20261112 -X utf8 -B -m unittest discover -s tests -v
 ```
 
 本机替代检查为 `python -m unittest discover -s Codes/tests -v`。测试内容与文件对应见 [tests/README.md](tests/README.md)。本机测试通过不能替代老师 Docker 中的验收证据；10 条 echo 连接测试也不证明两个真实比赛房间的隔离。
 
-### 完整题库接入后的正式启动
+### 已验证的正式启动
 
 在容器的 `/code` 或提交目录中运行：
 
@@ -293,13 +301,13 @@ docker run --rm --mount "type=bind,source=D:\Y3\csi201\cw1\Codes,target=/code" c
 python3 server.py --host <server_IP> --port <port> --questions <json_path>
 ```
 
-目前缺少 B 的 `load_question_bank()`，所以该命令会报题库加载失败、退出码为 1，不会监听。`--lab-mode` 与 `--questions` 互斥；前者只用于当前网络联调，不满足正式题库启动要求。仅提供 B 的加载函数仍不会自动开启大厅/比赛，还必须按第 5 节接入业务回调。
+例如：`python3 server.py --host 127.0.0.1 --port 5000 --questions questions_50.json`。现在合法题库会通过完整校验并监听；非法题库打印诊断、退出码为 1，不监听。`--lab-mode` 与 `--questions` 互斥。默认处理器仍仅提供 echo，`hello` 返回 `UNKNOWN_COMMAND`；下一步按第 5 节装配 B/C 业务回调并对齐客户端协议。
 
 ## 10. 尚待完成的工作
 
 | 工作 | 负责/协作 |
 | --- | --- |
-| 实现完整题库校验和题库访问结构 | B，A/E 接入启动入口 |
+| 确认已实现的题库对象接口，构造不泄漏题目/答案的公共目录 | B/C，E 已补齐加载器和验证 |
 | 统一请求路由、登录/房间/比赛处理与断线回调 | B/C，A/E 完成装配，D/E 同步消息字段 |
 | 慢连接的发送限制、关闭等待边界和停止比赛线程 | A/C，并与业务回调联调 |
 | 特殊 JSON 输入和并发关闭的边界加固 | A；当前测试未覆盖所有情况 |

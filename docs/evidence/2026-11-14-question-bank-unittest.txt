@@ -1,0 +1,140 @@
+ENVIRONMENT: 3.12.16 (main, Nov  5 2026, 07:58:20) [GCC 14.2.0]
+test_cli_workflow_errors_and_results_while_stdin_is_idle (test_cli.ClientProcessTest.test_cli_workflow_errors_and_results_while_stdin_is_idle) ... ok
+test_remote_disconnect_exits_without_another_enter (test_cli.ClientProcessTest.test_remote_disconnect_exits_without_another_enter) ... ok
+test_stdin_eof_closes_client (test_cli.ClientProcessTest.test_stdin_eof_closes_client) ... ok
+test_completed_requests_do_not_accumulate (test_client_regressions.ClientIntegrationRegressionTest.test_completed_requests_do_not_accumulate) ... ok
+test_error_does_not_undo_an_accepted_answer (test_client_regressions.ClientIntegrationRegressionTest.test_error_does_not_undo_an_accepted_answer) ... ok
+test_incomplete_question_event_is_rejected_before_reaching_ui (test_client_regressions.ClientIntegrationRegressionTest.test_incomplete_question_event_is_rejected_before_reaching_ui) ... ok
+test_late_answer_ack_does_not_mark_the_next_question (test_client_regressions.ClientIntegrationRegressionTest.test_late_answer_ack_does_not_mark_the_next_question) ... ok
+test_server_error_is_returned_and_pending_request_is_removed (test_client_regressions.ClientIntegrationRegressionTest.test_server_error_is_returned_and_pending_request_is_removed) ... ok
+test_state_is_updated_before_ui_event_and_foreign_room_is_ignored (test_client_regressions.ClientIntegrationRegressionTest.test_state_is_updated_before_ui_event_and_foreign_room_is_ignored) ... ok
+[FakeServer] Listening on 127.0.0.1:43233 mode=normal
+test_timeout_is_unknown_and_does_not_retry (test_client_regressions.ClientIntegrationRegressionTest.test_timeout_is_unknown_and_does_not_retry) ... ok
+test_answer_command_binds_explicit_question_id (test_client_regressions.ClientStateBoundaryTest.test_answer_command_binds_explicit_question_id) ... ok
+test_catalogue_and_leaderboard_snapshots_are_detached (test_client_regressions.ClientStateBoundaryTest.test_catalogue_and_leaderboard_snapshots_are_detached) ... ok
+test_host_transfer_updates_permission_view (test_client_regressions.ClientStateBoundaryTest.test_host_transfer_updates_permission_view) ... ok
+test_old_result_cannot_close_current_question (test_client_regressions.ClientStateBoundaryTest.test_old_result_cannot_close_current_question) ... ok
+test_01_normal_connection (test_connection.TestConnection.test_01_normal_connection)
+Test normal connection and handshake ... ok
+[FakeServer] Client connected
+test_02_half_packet (test_connection.TestConnection.test_02_half_packet)
+[FakeServer] Shutting down
+[FakeServer] Listening on 127.0.0.1:39011 mode=half_packet
+[FakeServer] Client connected
+[FakeServer] Shutting down
+Test half-packet: the server splits one message into two segments, and the client should reassemble it correctly ... ok
+[FakeServer] Listening on 127.0.0.1:38573 mode=event_and_response
+test_03_event_and_response (test_connection.TestConnection.test_03_event_and_response)
+[FakeServer] Client connected
+[FakeServer] Shutting down
+Test sticky packets and event dispatch: the server sends an event and a response together ... ok
+test_04_server_disconnect (test_connection.TestConnection.test_04_server_disconnect)
+Test sudden server disconnect: the request should return an error immediately to prevent deadlock ... ok
+test_05_request_timeout (test_connection.TestConnection.test_05_request_timeout)
+[FakeServer] Listening on 127.0.0.1:40057 mode=disconnect
+[FakeServer] Client connected
+[FakeServer] Shutting down
+[FakeServer] Listening on 127.0.0.1:35253 mode=timeout
+[FakeServer] Client connected
+Test request timeout: the server does not reply, and the client should return TIMEOUT after the timeout ... ok
+[FakeServer] Shutting down
+test_06_local_error_response_format (test_connection.TestConnection.test_06_local_error_response_format)
+Test that locally synthesized network errors use the unified 'response' envelope format ... ok
+test_broadcast_encoding_failure_keeps_sessions_registered (test_disconnect.DisconnectTest.test_broadcast_encoding_failure_keeps_sessions_registered) ... ok
+test_broadcast_network_failure_wakes_worker_and_notifies_business (test_disconnect.DisconnectTest.test_broadcast_network_failure_wakes_worker_and_notifies_business) ... ok
+无法编码响应：cannot encode message: Object of type object is not JSON serializable
+客户端已连接：('local', 1)
+发送响应失败：[Errno 32] Broken pipe
+客户端已断开：('local', 1)
+客户端已连接：('local', 1)
+客户端已连接：('local', 1)
+业务断线清理失败：模拟业务清理失败
+客户端已断开：('local', 1)
+业务断线清理失败：模拟业务清理失败
+客户端已断开：('local', 1)
+test_callback_error_does_not_break_other_client (test_disconnect.DisconnectTest.test_callback_error_does_not_break_other_client) ... ok
+无法编码响应：cannot encode message: Object of type object is not JSON serializable
+test_encoding_failure_does_not_close_healthy_connection (test_disconnect.DisconnectTest.test_encoding_failure_does_not_close_healthy_connection) ... ok
+客户端已连接：('local', 1)
+test_repeated_close_unblocks_reader_and_notifies_once_outside_lock (test_disconnect.DisconnectTest.test_repeated_close_unblocks_reader_and_notifies_once_outside_lock) ... ok
+客户端已断开：('local', 1)
+客户端已连接：('local', 1)
+客户端已断开：('local', 1)
+test_shutdown_waits_until_disconnect_callback_finishes (test_disconnect.DisconnectTest.test_shutdown_waits_until_disconnect_callback_finishes) ... ok
+客户端已连接：('local', 1)
+test_stop_request_then_shutdown_still_closes_connections (test_disconnect.DisconnectTest.test_stop_request_then_shutdown_still_closes_connections) ... ok
+客户端已断开：('local', 1)
+客户端已连接：('local', 1)
+无法编码响应：cannot encode message: Object of type object is not JSON serializable
+客户端已断开：('local', 1)
+test_unencodable_reply_returns_internal_error_and_connection_can_continue (test_disconnect.DisconnectTest.test_unencodable_reply_returns_internal_error_and_connection_can_continue) ... ok
+test_broadcast_only_targets_given_sessions_and_reports_failed_send (test_dispatch.DispatchTest.test_broadcast_only_targets_given_sessions_and_reports_failed_send) ... ok
+客户端已连接：('local', 1)
+客户端已断开：('local', 1)
+test_malformed_frame_then_custom_handler_event_and_response (test_dispatch.DispatchTest.test_malformed_frame_then_custom_handler_event_and_response) ... ok
+test_temporary_client_does_not_count_event_as_reply (test_dispatch.DispatchTest.test_temporary_client_does_not_count_event_as_reply) ... ok
+test_duplicate_and_late_answers_are_rejected_without_score_change (test_game_engine.GameEngineTests.test_duplicate_and_late_answers_are_rejected_without_score_change) ... ok
+test_final_leaderboard_is_stable_and_includes_disconnected_player (test_game_engine.GameEngineTests.test_final_leaderboard_is_stable_and_includes_disconnected_player) ... ok
+test_question_event_hides_answer_and_scores_correct_answers (test_game_engine.GameEngineTests.test_question_event_hides_answer_and_scores_correct_answers) ... ok
+test_scores_and_events_do_not_leak_between_rooms (test_game_engine.GameEngineTests.test_scores_and_events_do_not_leak_between_rooms) ... ok
+test_start_requires_two_players_by_default (test_game_engine.GameEngineTests.test_start_requires_two_players_by_default) ... ok
+test_ten_players_can_progress_in_two_independent_rooms (test_game_engine.GameEngineTests.test_ten_players_can_progress_in_two_independent_rooms) ... ok
+test_timer_thread_closes_question_at_server_deadline (test_game_engine.GameEngineTests.test_timer_thread_closes_question_at_server_deadline) ... ok
+test_json_responses_and_malformed_message_error_share_connection (test_network.EchoTest.test_json_responses_and_malformed_message_error_share_connection) ... ok
+test_ten_simultaneous_clients_receive_independent_responses (test_network.EchoTest.test_ten_simultaneous_clients_receive_independent_responses) ... ok
+test_two_clients_receive_their_own_responses (test_network.EchoTest.test_two_clients_receive_their_own_responses) ... ok
+test_extractor_keeps_partial_line_and_reads_multiple_lines (test_protocol.ProtocolTest.test_extractor_keeps_partial_line_and_reads_multiple_lines) ... ok
+test_json_round_trip_preserves_unicode_and_adds_newline (test_protocol.ProtocolTest.test_json_round_trip_preserves_unicode_and_adds_newline) ... ok
+test_rejects_frame_larger_than_limit (test_protocol.ProtocolTest.test_rejects_frame_larger_than_limit) ... ok
+test_rejects_invalid_json_and_non_object_values (test_protocol.ProtocolTest.test_rejects_invalid_json_and_non_object_values) ... ok
+test_answers_must_be_one_of_four_uppercase_letters (test_question_bank.QuestionBankTest.test_answers_must_be_one_of_four_uppercase_letters) ... ok
+test_both_repository_banks_are_valid (test_question_bank.QuestionBankTest.test_both_repository_banks_are_valid) ... ok
+test_duplicate_quiz_and_global_question_ids_are_rejected (test_question_bank.QuestionBankTest.test_duplicate_quiz_and_global_question_ids_are_rejected) ... ok
+test_entire_file_is_validated_including_last_question (test_question_bank.QuestionBankTest.test_entire_file_is_validated_including_last_question) ... ok
+test_every_required_field_is_checked (test_question_bank.QuestionBankTest.test_every_required_field_is_checked) ... ok
+test_failed_validation_happens_before_any_socket_is_created (test_question_bank.QuestionBankTest.test_failed_validation_happens_before_any_socket_is_created) ... ok
+test_file_order_and_additional_members_are_preserved (test_question_bank.QuestionBankTest.test_file_order_and_additional_members_are_preserved) ... ok
+test_file_size_boundary_and_empty_file (test_question_bank.QuestionBankTest.test_file_size_boundary_and_empty_file) ... ok
+test_identifier_types_charset_and_length (test_question_bank.QuestionBankTest.test_identifier_types_charset_and_length) ... ok
+test_invalid_utf8_json_and_nonstandard_constants_are_rejected (test_question_bank.QuestionBankTest.test_invalid_utf8_json_and_nonstandard_constants_are_rejected) ... ok
+test_minimum_bank_and_path_object_are_accepted (test_question_bank.QuestionBankTest.test_minimum_bank_and_path_object_are_accepted) ... ok
+test_missing_file_is_an_os_error (test_question_bank.QuestionBankTest.test_missing_file_is_an_os_error) ... ok
+test_numeric_ranges_and_json_integer_types (test_question_bank.QuestionBankTest.test_numeric_ranges_and_json_integer_types) ... ok
+test_options_require_exact_keys_and_string_values (test_question_bank.QuestionBankTest.test_options_require_exact_keys_and_string_values) ... ok
+test_quiz_and_question_array_types_and_count_boundaries (test_question_bank.QuestionBankTest.test_quiz_and_question_array_types_and_count_boundaries) ... ok
+test_quizzes_and_questions_must_be_objects (test_question_bank.QuestionBankTest.test_quizzes_and_questions_must_be_objects) ... ok
+test_real_server_starts_with_teacher_bank_and_accepts_tcp (test_question_bank.QuestionBankTest.test_real_server_starts_with_teacher_bank_and_accepts_tcp) ... ok
+test_schema_version_is_integer_one_not_boolean (test_question_bank.QuestionBankTest.test_schema_version_is_integer_one_not_boolean) ... ok
+test_text_types_lengths_visibility_and_valid_boundaries (test_question_bank.QuestionBankTest.test_text_types_lengths_visibility_and_valid_boundaries) ... ok
+test_top_level_must_be_an_object (test_question_bank.QuestionBankTest.test_top_level_must_be_an_object) ... ok
+test_utf8_and_initial_bom_are_accepted (test_question_bank.QuestionBankTest.test_utf8_and_initial_bom_are_accepted) ... ok
+test_closed_socket_returns_false_instead_of_raising (test_server.SendResponseTest.test_closed_socket_returns_false_instead_of_raising) ... ok
+test_concurrent_writers_keep_each_json_frame_intact (test_server.SendResponseTest.test_concurrent_writers_keep_each_json_frame_intact) ... ok
+test_encode_failure_is_logged_and_not_sent (test_server.SendResponseTest.test_encode_failure_is_logged_and_not_sent) ... ok
+test_valid_response_is_encoded_and_sent (test_server.SendResponseTest.test_valid_response_is_encoded_and_sent) ... ok
+test_formal_mode_prints_ready_marker_after_binding (test_startup.StartupTest.test_formal_mode_prints_ready_marker_after_binding) ... ok
+test_host_and_port_are_required (test_startup.StartupTest.test_host_and_port_are_required) ... ok
+test_invalid_question_bank_prevents_server_from_starting (test_startup.StartupTest.test_invalid_question_bank_prevents_server_from_starting) ... ok
+test_lab_mode_cannot_be_combined_with_questions (test_startup.StartupTest.test_lab_mode_cannot_be_combined_with_questions) ... ok
+test_lab_mode_keeps_echo_server_available (test_startup.StartupTest.test_lab_mode_keeps_echo_server_available) ... ok
+test_question_bank_is_loaded_before_server_starts_listening (test_startup.StartupTest.test_question_bank_is_loaded_before_server_starts_listening) ... ok
+test_startup_requires_questions_or_explicit_lab_mode (test_startup.StartupTest.test_startup_requires_questions_or_explicit_lab_mode) ... ok
+test_01_connection_state (test_state.TestClientState.test_01_connection_state)
+Test connection and disconnection state ... ok
+test_02_enter_and_leave_room (test_state.TestClientState.test_02_enter_and_leave_room)
+Test entering and leaving a room, as well as host determination ... ok
+test_03_update_players_keep_score (test_state.TestClientState.test_03_update_players_keep_score)
+Test that old scores are not accidentally reset when updating the player list ... ok
+test_04_question_flow_and_duplicate_prevention (test_state.TestClientState.test_04_question_flow_and_duplicate_prevention)
+Test the flow of sending a question, answering, and revealing the answer ... ok
+test_05_state_isolation (test_state.TestClientState.test_05_state_isolation)
+Test that match data does not leak between rooms when switching rooms ... ok
+test_06_thread_safe_snapshot (test_state.TestClientState.test_06_thread_safe_snapshot)
+Test snapshot deep copy, and that high-concurrency reads do not crash ... ok
+test_07_v3_protocol_compatibility (test_state.TestClientState.test_07_v3_protocol_compatibility)
+Test compatibility with v3 protocol: display_name and index mapping ... ok
+
+----------------------------------------------------------------------
+Ran 84 tests in 10.569s
+
+OK
