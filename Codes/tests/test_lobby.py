@@ -387,11 +387,25 @@ class LobbyTests(unittest.TestCase):
         self.assertEqual(response["error"]["code"], "NOT_IN_ROOM")
 
     # ------------------------------------------------------- quit / disconnect
-    def test_quit_only_confirms(self):
+    def test_quit_confirms_and_frees_the_identity_immediately(self):
         self.login(self.sessions[0], "u1")
         response = call(self.handler, self.sessions[0], "quit")
         self.assertTrue(response["ok"])
         self.assertEqual(response["data"], {"bye": True})
+
+        # Cleanup may not wait for A's disconnect callback: otherwise a client
+        # reconnecting with the same user_id while the old socket is still
+        # closing would be rejected as DUPLICATE_USER.
+        response = call(self.handler, self.sessions[1], "hello", user_id="u1", name="Again")
+        self.assertTrue(response["ok"], response)
+
+    def test_quit_frees_the_seat_and_tells_the_room(self):
+        room_id = self.seat_two_players()
+        call(self.handler, self.sessions[0], "quit")
+        room = call(self.handler, self.sessions[1], "inspect_room", room_id=room_id)["data"]["room"]
+        self.assertEqual(room["host_user_id"], "u2")
+        self.assertEqual(len(room["players"]), 1)
+        self.assertIsNotNone(self.sessions[1].last_event("room_update"))
 
     def test_disconnect_cleans_identity_and_room(self):
         room_id = self.make_room(self.sessions[0], "u1")

@@ -17,6 +17,7 @@ import json
 import re
 from dataclasses import dataclass
 from pathlib import Path
+from types import MappingProxyType
 
 MAX_FILE_BYTES = 1024 * 1024      # Specification: maximum accepted file size 1 MB
 MAX_QUIZZES = 20                  # quizzes: 1 to 20 objects
@@ -38,7 +39,14 @@ _MISSING = object()
 
 
 def _visible_length(value):
-    """Count visible characters, ignoring whitespace and control characters."""
+    """Count visible characters, ignoring whitespace and control characters.
+
+    The schema deliberately uses two different measures: ``title``,
+    ``description`` and ``text`` are bounded in **visible characters** (so a
+    padded string does not spend its budget on spaces), while each
+    ``options`` value is bounded in plain **characters**. Both checks below
+    follow the wording of the Specification rather than one shared rule.
+    """
     return sum(1 for char in value if char.isprintable() and not char.isspace())
 
 
@@ -92,11 +100,16 @@ def _require_int_range(value, where, field_name, minimum, maximum):
 
 @dataclass(frozen=True)
 class Question:
-    """One validated question; ``answer`` stays server-side."""
+    """One validated question; ``answer`` stays server-side.
+
+    ``options`` is a ``MappingProxyType``: ``frozen=True`` only stops the field
+    from being rebound, so the mapping itself is wrapped to keep the bank
+    genuinely read-only once a room has been handed question payloads.
+    """
 
     question_id: str
     text: str
-    options: dict
+    options: object
     answer: str
     time_limit: int
     points: int
@@ -327,7 +340,7 @@ def _parse_question(question_raw, where, question_ids):
     return Question(
         question_id=question_id,
         text=text,
-        options={key: options[key] for key in OPTION_KEYS},
+        options=MappingProxyType({key: options[key] for key in OPTION_KEYS}),
         answer=answer,
         time_limit=time_limit,
         points=points,
