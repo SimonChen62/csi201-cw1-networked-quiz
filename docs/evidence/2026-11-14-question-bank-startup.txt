@@ -1,0 +1,14 @@
+ENVIRONMENT: 3.12.16 (main, Nov  5 2026, 07:58:20) [GCC 14.2.0]
+BANK_SHA256: 46f1d17652dc242bbca3a7d47b550f71e571445e869085fa901cc2faa4033bb2
+QUIZZES: 5
+QUESTIONS: 50
+QUIZ_IDS: ['geography', 'history', 'natural-science', 'literature-arts', 'math-logic']
+STARTUP: SERVER_READY 127.0.0.1 36999
+RESPONSE: {"type": "response", "request_id": "smoke-echo", "ok": true, "data": {"text": "bank-loaded"}}
+RESPONSE: {"type": "response", "request_id": "smoke-hello", "ok": false, "error": {"code": "UNKNOWN_COMMAND", "message": "hello"}}
+客户端已连接：('127.0.0.1', 37518)
+客户端已断开：('127.0.0.1', 37518)
+SIGINT_EXIT: 0
+INVALID_BANK_EXIT: 1
+INVALID_BANK_DIAGNOSTIC: 题库加载或校验失败：quizzes[4].questions[9].points: must be between 1 and 1000
+RESULT: bank validation and real startup passed; hello business route remains unimplemented.

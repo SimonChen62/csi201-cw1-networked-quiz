@@ -53,6 +53,7 @@ class TestConnection(unittest.TestCase):
         self.assertTrue(success)
         
         # Verify the response is matched successfully
+        self.state.enter_room("r1", "u1", [])
         resp = self.conn.send_request("list_rooms", {})
         self.assertTrue(resp["ok"])
         
@@ -75,6 +76,7 @@ class TestConnection(unittest.TestCase):
         success = self.conn.connect("127.0.0.1", server.port, "u1", "Alice")
         self.assertFalse(success)
         self.assertFalse(self.state.connected)
+        self.assertEqual(self.conn.last_error["error"]["code"], "CONNECTION_LOST")
         
         # There should be a server_shutdown event in the queue
         event = self.conn.event_queue.get(timeout=1)

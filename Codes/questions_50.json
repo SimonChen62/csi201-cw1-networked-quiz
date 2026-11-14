@@ -1,0 +1,690 @@
+{
+  "schema_version": 1,
+  "quizzes": [
+    {
+      "quiz_id": "geography",
+      "title": "Geography",
+      "description": "10 single-answer multiple-choice questions on geography for acceptance testing.",
+      "questions": [
+        {
+          "question_id": "GK001",
+          "text": "Which ocean has the largest surface area on Earth?",
+          "options": {
+            "A": "Indian Ocean",
+            "B": "Arctic Ocean",
+            "C": "Atlantic Ocean",
+            "D": "Pacific Ocean"
+          },
+          "answer": "D",
+          "time_limit": 60,
+          "points": 100
+        },
+        {
+          "question_id": "GK002",
+          "text": "On which continent is Brazil located?",
+          "options": {
+            "A": "Africa",
+            "B": "Europe",
+            "C": "North America",
+            "D": "South America"
+          },
+          "answer": "D",
+          "time_limit": 60,
+          "points": 100
+        },
+        {
+          "question_id": "GK004",
+          "text": "Which line of latitude divides Earth into the Northern and Southern Hemispheres?",
+          "options": {
+            "A": "Tropic of Capricorn",
+            "B": "Tropic of Cancer",
+            "C": "Equator",
+            "D": "Arctic Circle"
+          },
+          "answer": "C",
+          "time_limit": 60,
+          "points": 100
+        },
+        {
+          "question_id": "GK005",
+          "text": "What is the longitude of the prime meridian?",
+          "options": {
+            "A": "0 degrees",
+            "B": "90 degrees",
+            "C": "30 degrees",
+            "D": "180 degrees"
+          },
+          "answer": "A",
+          "time_limit": 60,
+          "points": 100
+        },
+        {
+          "question_id": "GK010",
+          "text": "In which country is Sydney located?",
+          "options": {
+            "A": "New Zealand",
+            "B": "Australia",
+            "C": "United Kingdom",
+            "D": "Canada"
+          },
+          "answer": "B",
+          "time_limit": 60,
+          "points": 100
+        },
+        {
+          "question_id": "GK013",
+          "text": "In which country is the Taj Mahal located?",
+          "options": {
+            "A": "Nepal",
+            "B": "India",
+            "C": "Turkey",
+            "D": "Thailand"
+          },
+          "answer": "B",
+          "time_limit": 60,
+          "points": 100
+        },
+        {
+          "question_id": "GK016",
+          "text": "On which continent is the Sahara Desert located?",
+          "options": {
+            "A": "Africa",
+            "B": "Europe",
+            "C": "South America",
+            "D": "Asia"
+          },
+          "answer": "A",
+          "time_limit": 60,
+          "points": 100
+        },
+        {
+          "question_id": "GK018",
+          "text": "To which mountain range does Mount Everest belong?",
+          "options": {
+            "A": "Rocky Mountains",
+            "B": "Alps",
+            "C": "Himalayas",
+            "D": "Andes"
+          },
+          "answer": "C",
+          "time_limit": 60,
+          "points": 100
+        },
+        {
+          "question_id": "GK020",
+          "text": "Which two bodies of water are directly connected by the Suez Canal?",
+          "options": {
+            "A": "Mediterranean Sea and Red Sea",
+            "B": "Black Sea and Caspian Sea",
+            "C": "Baltic Sea and North Sea",
+            "D": "Red Sea and Black Sea"
+          },
+          "answer": "A",
+          "time_limit": 60,
+          "points": 100
+        },
+        {
+          "question_id": "GK025",
+          "text": "On a map with a scale of 1:100000, what actual distance does 1 cm represent?",
+          "options": {
+            "A": "100 km",
+            "B": "1 km",
+            "C": "100 m",
+            "D": "10 km"
+          },
+          "answer": "B",
+          "time_limit": 60,
+          "points": 100
+        }
+      ]
+    },
+    {
+      "quiz_id": "history",
+      "title": "History",
+      "description": "10 single-answer multiple-choice questions on history for acceptance testing.",
+      "questions": [
+        {
+          "question_id": "GK031",
+          "text": "The Forbidden City in Beijing served mainly as the imperial palace during which two dynasties?",
+          "options": {
+            "A": "Ming and Qing",
+            "B": "Qin and Han",
+            "C": "Song and Yuan",
+            "D": "Han and Tang"
+          },
+          "answer": "A",
+          "time_limit": 60,
+          "points": 100
+        },
+        {
+          "question_id": "GK032",
+          "text": "What was a main function of the ancient Silk Road?",
+          "options": {
+            "A": "Transporting seawater exclusively",
+            "B": "Flood drainage and irrigation exclusively",
+            "C": "Trade and cultural exchange between regions",
+            "D": "Observing celestial objects exclusively"
+          },
+          "answer": "C",
+          "time_limit": 60,
+          "points": 100
+        },
+        {
+          "question_id": "GK033",
+          "text": "In which year BCE did the Qin unify the six other major states and establish a unified dynasty?",
+          "options": {
+            "A": "256 BCE",
+            "B": "206 BCE",
+            "C": "202 BCE",
+            "D": "221 BCE"
+          },
+          "answer": "D",
+          "time_limit": 60,
+          "points": 100
+        },
+        {
+          "question_id": "GK034",
+          "text": "Cai Lun's improvements to papermaking are usually associated with which dynasty?",
+          "options": {
+            "A": "Ming",
+            "B": "Eastern Han",
+            "C": "Western Zhou",
+            "D": "Northern Song"
+          },
+          "answer": "B",
+          "time_limit": 60,
+          "points": 100
+        },
+        {
+          "question_id": "GK036",
+          "text": "During which period did Bi Sheng develop movable-type printing?",
+          "options": {
+            "A": "Qing",
+            "B": "Northern Song",
+            "C": "Western Han",
+            "D": "Qin"
+          },
+          "answer": "B",
+          "time_limit": 60,
+          "points": 100
+        },
+        {
+          "question_id": "GK038",
+          "text": "In which region did the European Renaissance first emerge?",
+          "options": {
+            "A": "Norway",
+            "B": "Iceland",
+            "C": "Italy",
+            "D": "Poland"
+          },
+          "answer": "C",
+          "time_limit": 60,
+          "points": 100
+        },
+        {
+          "question_id": "GK039",
+          "text": "In which country did the First Industrial Revolution begin?",
+          "options": {
+            "A": "Brazil",
+            "B": "India",
+            "C": "Russia",
+            "D": "United Kingdom"
+          },
+          "answer": "D",
+          "time_limit": 60,
+          "points": 100
+        },
+        {
+          "question_id": "GK041",
+          "text": "In which year did the French Revolution begin?",
+          "options": {
+            "A": "1914",
+            "B": "1789",
+            "C": "1689",
+            "D": "1815"
+          },
+          "answer": "B",
+          "time_limit": 60,
+          "points": 100
+        },
+        {
+          "question_id": "GK044",
+          "text": "In which civilization did the ancient Olympic Games originate?",
+          "options": {
+            "A": "Ancient Maya civilization",
+            "B": "Ancient Indian civilization",
+            "C": "Ancient Greek civilization",
+            "D": "Ancient Egyptian civilization"
+          },
+          "answer": "C",
+          "time_limit": 60,
+          "points": 100
+        },
+        {
+          "question_id": "GK046",
+          "text": "On what materials were Chinese oracle-bone inscriptions mainly carved?",
+          "options": {
+            "A": "Turtle shells and animal bones",
+            "B": "Silk and cotton cloth",
+            "C": "Rubber and charcoal",
+            "D": "Glass and plastic"
+          },
+          "answer": "A",
+          "time_limit": 60,
+          "points": 100
+        }
+      ]
+    },
+    {
+      "quiz_id": "natural-science",
+      "title": "Natural Science",
+      "description": "10 single-answer multiple-choice questions on natural science for acceptance testing.",
+      "questions": [
+        {
+          "question_id": "NS001",
+          "text": "What is the chemical formula of water?",
+          "options": {
+            "A": "NaCl",
+            "B": "CO2",
+            "C": "O2",
+            "D": "H2O"
+          },
+          "answer": "D",
+          "time_limit": 60,
+          "points": 100
+        },
+        {
+          "question_id": "NS006",
+          "text": "At 25 degrees Celsius, what is the approximate pH of pure water?",
+          "options": {
+            "A": "1",
+            "B": "10",
+            "C": "7",
+            "D": "14"
+          },
+          "answer": "C",
+          "time_limit": 60,
+          "points": 100
+        },
+        {
+          "question_id": "NS011",
+          "text": "What electrical charge does an electron carry?",
+          "options": {
+            "A": "Exactly two positive charges at all times",
+            "B": "No charge",
+            "C": "Negative",
+            "D": "Positive"
+          },
+          "answer": "C",
+          "time_limit": 60,
+          "points": 100
+        },
+        {
+          "question_id": "NS014",
+          "text": "What is the SI unit of force?",
+          "options": {
+            "A": "Newton",
+            "B": "Kelvin",
+            "C": "Ampere",
+            "D": "Watt"
+          },
+          "answer": "A",
+          "time_limit": 60,
+          "points": 100
+        },
+        {
+          "question_id": "NS019",
+          "text": "Can sound travel through a vacuum?",
+          "options": {
+            "A": "Yes, but only upwards",
+            "B": "No, because sound requires a medium",
+            "C": "Yes, but only musical sounds",
+            "D": "Yes, at an infinite speed"
+          },
+          "answer": "B",
+          "time_limit": 60,
+          "points": 100
+        },
+        {
+          "question_id": "NS021",
+          "text": "A straight chopstick partly submerged at an angle appears bent at the water surface. What mainly causes this?",
+          "options": {
+            "A": "Emission of light",
+            "B": "Combustion of water",
+            "C": "Reflection of sound",
+            "D": "Refraction of light"
+          },
+          "answer": "D",
+          "time_limit": 60,
+          "points": 100
+        },
+        {
+          "question_id": "NS031",
+          "text": "Counting outwards from the Sun, which planet is Earth?",
+          "options": {
+            "A": "Third",
+            "B": "Fifth",
+            "C": "First",
+            "D": "Eighth"
+          },
+          "answer": "A",
+          "time_limit": 60,
+          "points": 100
+        },
+        {
+          "question_id": "NS035",
+          "text": "Which planet in the Solar System has the largest volume?",
+          "options": {
+            "A": "Earth",
+            "B": "Mercury",
+            "C": "Mars",
+            "D": "Jupiter"
+          },
+          "answer": "D",
+          "time_limit": 60,
+          "points": 100
+        },
+        {
+          "question_id": "NS039",
+          "text": "In green plant cells, where does photosynthesis mainly take place?",
+          "options": {
+            "A": "Vacuoles",
+            "B": "Mitochondria",
+            "C": "Chloroplasts",
+            "D": "Cell walls"
+          },
+          "answer": "C",
+          "time_limit": 60,
+          "points": 100
+        },
+        {
+          "question_id": "NS044",
+          "text": "Which of the following animals is a mammal?",
+          "options": {
+            "A": "Crocodile",
+            "B": "Whale",
+            "C": "Penguin",
+            "D": "Shark"
+          },
+          "answer": "B",
+          "time_limit": 60,
+          "points": 100
+        }
+      ]
+    },
+    {
+      "quiz_id": "literature-arts",
+      "title": "Literature and the Arts",
+      "description": "10 single-answer multiple-choice questions on literature and the arts for acceptance testing.",
+      "questions": [
+        {
+          "question_id": "LA002",
+          "text": "Sun Wukong, also known as the Monkey King, is a major character in which classical novel?",
+          "options": {
+            "A": "Strange Tales from a Chinese Studio",
+            "B": "Dream of the Red Chamber",
+            "C": "Journey to the West",
+            "D": "The Scholars"
+          },
+          "answer": "C",
+          "time_limit": 60,
+          "points": 100
+        },
+        {
+          "question_id": "LA019",
+          "text": "What are the traditional Four Treasures of the Study in Chinese culture?",
+          "options": {
+            "A": "Zither, chess, calligraphy and painting",
+            "B": "Brush, ink, paper and inkstone",
+            "C": "Plum blossom, orchid, bamboo and chrysanthemum",
+            "D": "Gold, silver, copper and iron"
+          },
+          "answer": "B",
+          "time_limit": 60,
+          "points": 100
+        },
+        {
+          "question_id": "LA022",
+          "text": "How many strings does a traditional guqin usually have?",
+          "options": {
+            "A": "4",
+            "B": "2",
+            "C": "7",
+            "D": "12"
+          },
+          "answer": "C",
+          "time_limit": 60,
+          "points": 100
+        },
+        {
+          "question_id": "LA029",
+          "text": "Who painted the Mona Lisa?",
+          "options": {
+            "A": "Vincent van Gogh",
+            "B": "Claude Monet",
+            "C": "Pablo Picasso",
+            "D": "Leonardo da Vinci"
+          },
+          "answer": "D",
+          "time_limit": 60,
+          "points": 100
+        },
+        {
+          "question_id": "LA030",
+          "text": "Who painted The Starry Night?",
+          "options": {
+            "A": "Leonardo da Vinci",
+            "B": "Raphael",
+            "C": "Rembrandt",
+            "D": "Vincent van Gogh"
+          },
+          "answer": "D",
+          "time_limit": 60,
+          "points": 100
+        },
+        {
+          "question_id": "LA033",
+          "text": "Who wrote the play Hamlet?",
+          "options": {
+            "A": "William Shakespeare",
+            "B": "Charles Dickens",
+            "C": "Honore de Balzac",
+            "D": "Leo Tolstoy"
+          },
+          "answer": "A",
+          "time_limit": 60,
+          "points": 100
+        },
+        {
+          "question_id": "LA035",
+          "text": "Who wrote The Old Man and the Sea?",
+          "options": {
+            "A": "Victor Hugo",
+            "B": "Ernest Hemingway",
+            "C": "Stendhal",
+            "D": "Franz Kafka"
+          },
+          "answer": "B",
+          "time_limit": 60,
+          "points": 100
+        },
+        {
+          "question_id": "LA041",
+          "text": "Which Chinese poet is commonly known as the Immortal Poet, or Shi Xian?",
+          "options": {
+            "A": "Du Fu",
+            "B": "Bai Juyi",
+            "C": "Wang Wei",
+            "D": "Li Bai"
+          },
+          "answer": "D",
+          "time_limit": 60,
+          "points": 100
+        },
+        {
+          "question_id": "LA043",
+          "text": "Which literary device is mainly used in the sentence The moon is like a silver plate?",
+          "options": {
+            "A": "Simile",
+            "B": "Rhetorical question",
+            "C": "Parallelism",
+            "D": "Antithesis"
+          },
+          "answer": "A",
+          "time_limit": 60,
+          "points": 100
+        },
+        {
+          "question_id": "LA044",
+          "text": "Which literary device is mainly used in the sentence The willow waves to passing people?",
+          "options": {
+            "A": "Personification",
+            "B": "A question immediately answered by the speaker",
+            "C": "Antithesis",
+            "D": "Rhetorical question"
+          },
+          "answer": "A",
+          "time_limit": 60,
+          "points": 100
+        }
+      ]
+    },
+    {
+      "quiz_id": "math-logic",
+      "title": "Mathematics and Logic",
+      "description": "10 single-answer multiple-choice questions on mathematics and logic for acceptance testing.",
+      "questions": [
+        {
+          "question_id": "ML001",
+          "text": "What is 17 + 28?",
+          "options": {
+            "A": "55",
+            "B": "43",
+            "C": "45",
+            "D": "35"
+          },
+          "answer": "C",
+          "time_limit": 60,
+          "points": 100
+        },
+        {
+          "question_id": "ML005",
+          "text": "What is 3/4 expressed as a decimal?",
+          "options": {
+            "A": "0.75",
+            "B": "0.25",
+            "C": "0.34",
+            "D": "0.80"
+          },
+          "answer": "A",
+          "time_limit": 60,
+          "points": 100
+        },
+        {
+          "question_id": "ML010",
+          "text": "Using the usual order of operations, what is 3 + 4 x 2?",
+          "options": {
+            "A": "10",
+            "B": "11",
+            "C": "14",
+            "D": "24"
+          },
+          "answer": "B",
+          "time_limit": 60,
+          "points": 100
+        },
+        {
+          "question_id": "ML016",
+          "text": "What is the solution of 2x + 3 = 17?",
+          "options": {
+            "A": "x = 8",
+            "B": "x = 7",
+            "C": "x = 5",
+            "D": "x = 10"
+          },
+          "answer": "B",
+          "time_limit": 60,
+          "points": 100
+        },
+        {
+          "question_id": "ML023",
+          "text": "A value increases from 100 to 125. What is its percentage increase?",
+          "options": {
+            "A": "20%",
+            "B": "125%",
+            "C": "5%",
+            "D": "25%"
+          },
+          "answer": "D",
+          "time_limit": 60,
+          "points": 100
+        },
+        {
+          "question_id": "ML026",
+          "text": "What is the area of a rectangle measuring 8 cm by 5 cm?",
+          "options": {
+            "A": "80 cm^2",
+            "B": "40 cm^2",
+            "C": "26 cm^2",
+            "D": "13 cm^2"
+          },
+          "answer": "B",
+          "time_limit": 60,
+          "points": 100
+        },
+        {
+          "question_id": "ML032",
+          "text": "A right-angled triangle has perpendicular sides of length 3 and 4. What is its hypotenuse length?",
+          "options": {
+            "A": "5",
+            "B": "8",
+            "C": "7",
+            "D": "6"
+          },
+          "answer": "A",
+          "time_limit": 60,
+          "points": 100
+        },
+        {
+          "question_id": "ML044",
+          "text": "A fair six-sided die is rolled once. What is the probability of an even result?",
+          "options": {
+            "A": "1/3",
+            "B": "2/3",
+            "C": "1/6",
+            "D": "1/2"
+          },
+          "answer": "D",
+          "time_limit": 60,
+          "points": 100
+        },
+        {
+          "question_id": "ML047",
+          "text": "What is the arithmetic mean of 2, 4, 6 and 8?",
+          "options": {
+            "A": "4",
+            "B": "6",
+            "C": "5",
+            "D": "20"
+          },
+          "answer": "C",
+          "time_limit": 60,
+          "points": 100
+        },
+        {
+          "question_id": "ML050",
+          "text": "All A are B, and all B are C. Which statement must be true?",
+          "options": {
+            "A": "All A are C",
+            "B": "All C are A",
+            "C": "All B are A",
+            "D": "No A are C"
+          },
+          "answer": "A",
+          "time_limit": 60,
+          "points": 100
+        }
+      ]
+    }
+  ]
+}
