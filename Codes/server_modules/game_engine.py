@@ -2,7 +2,7 @@
 
 The engine owns only a room's match lifecycle. Lobby/user code validates the
 host and ready-state rules, then creates a ``MatchState`` and supplies an
-``emit_event`` callback which broadcasts frozen-v2 events to that room's
+``emit_event`` callback which broadcasts the agreed v3 events to that room's
 sessions. Each state has its own room lock, timer thread and score state.
 """
 
@@ -121,11 +121,13 @@ class GameEngine:
     def start_match(self, match: MatchState, *, run_async: bool = True) -> dict[str, Any]:
         """Open question one and, normally, start its background timing loop.
 
-        The immediate value is suitable for the frozen-v2 ``start`` response;
-        ``game_started`` and ``question_open`` are sent as asynchronous events. Set
+        The immediate value is consumed by the lobby's ``start_game`` handler;
+        ``question`` is sent as an asynchronous event. Set
         ``run_async=False`` only for deterministic tests or a manual driver.
         """
         with match.room_lock:
+            if match.stop_event.is_set():
+                return self._rejection("SERVER_SHUTDOWN", "the match is stopping")
             if match.phase != WAITING:
                 return self._rejection("ALREADY_STARTED", "the game has already started")
             if len(match.connected_players) < self._min_players:
@@ -137,18 +139,11 @@ class GameEngine:
             match.phase = RUNNING
             match.question_index = 0
             match.answers.clear()
-            match.stop_event.clear()
             match.wake_event.clear()
             match.question_deadline = self._clock() + match.questions[0]["time_limit"]
             question_event = self._question_payload_locked(match)
-            start_event = {
-                "room_id": match.room_id,
-                "quiz_id": match.quiz_id,
-                "question_count": len(match.questions),
-            }
 
-        self._emit("game_started", match.room_id, start_event)
-        self._emit("question_open", match.room_id, question_event)
+        self._emit("question", match.room_id, question_event)
 
         if run_async:
             worker = threading.Thread(
@@ -158,14 +153,15 @@ class GameEngine:
                 daemon=True,
             )
             with match.room_lock:
-                match.game_thread = worker
-            worker.start()
+                if not match.stop_event.is_set():
+                    match.game_thread = worker
+                    worker.start()
 
         return {
             "accepted": True,
             "data": {
                 "room_id": match.room_id,
-                "state": "running",
+                "state": RUNNING,
                 "question_count": len(match.questions),
             },
         }
@@ -300,20 +296,20 @@ class GameEngine:
         result = {
             "room_id": match.room_id,
             "question_id": question["question_id"],
-            "correct": correct_answer,
+            "answer": correct_answer,
             "scores": dict(match.scores),
         }
         match.answers.clear()
         match.question_deadline = None
         match.wake_event.clear()
-        events: list[tuple[str, dict[str, Any]]] = [("question_closed", result)]
+        events: list[tuple[str, dict[str, Any]]] = [("question_result", result)]
 
         match.question_index += 1
         if match.question_index == len(match.questions):
             match.phase = FINISHED
             events.append(
                 (
-                    "game_finished",
+                    "leaderboard",
                     {
                         "room_id": match.room_id,
                         "leaderboard": build_leaderboard(
@@ -327,7 +323,7 @@ class GameEngine:
 
         next_question = match.questions[match.question_index]
         match.question_deadline = self._clock() + next_question["time_limit"]
-        events.append(("question_open", self._question_payload_locked(match)))
+        events.append(("question", self._question_payload_locked(match)))
         return events
 
     def _question_payload_locked(self, match: MatchState) -> dict[str, Any]:

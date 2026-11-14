@@ -64,11 +64,8 @@ class GameEngineTests(unittest.TestCase):
         match = self.make_match()
         self.start(match)
         room_id, event, question = self.events[-1]
-        self.assertEqual((room_id, event), ("room-1", "question_open"))
-        self.assertEqual(
-            self.events[-2],
-            ("room-1", "game_started", {"room_id": "room-1", "quiz_id": "quiz-1", "question_count": 2}),
-        )
+        self.assertEqual((room_id, event), ("room-1", "question"))
+        self.assertEqual(len(self.events), 1)
         self.assertNotIn("answer", question)
         self.assertNotIn("correct", question)
         self.assertEqual(question["index"], 0)
@@ -78,10 +75,10 @@ class GameEngineTests(unittest.TestCase):
         self.assertTrue(self.engine.close_current_question(match))
 
         _, event, result = self.events[-2]
-        self.assertEqual(event, "question_closed")
-        self.assertEqual(result["correct"], "A")
+        self.assertEqual(event, "question_result")
+        self.assertEqual(result["answer"], "A")
         self.assertEqual(result["scores"], {"alice": 100, "bob": 0})
-        self.assertEqual(self.events[-1][1], "question_open")
+        self.assertEqual(self.events[-1][1], "question")
 
     def test_duplicate_and_late_answers_are_rejected_without_score_change(self):
         match = self.make_match()
@@ -112,7 +109,7 @@ class GameEngineTests(unittest.TestCase):
         self.assertEqual(self.engine.snapshot(room_one)["scores"], {"alice": 100, "bob": 0})
         self.assertEqual(self.engine.snapshot(room_two)["scores"], {"alice": 0, "bob": 0})
         room_two_events = [event for room_id, event, _ in self.events if room_id == "room-two"]
-        self.assertEqual(room_two_events, ["game_started", "question_open"])
+        self.assertEqual(room_two_events, ["question"])
 
     def test_final_leaderboard_is_stable_and_includes_disconnected_player(self):
         match = self.make_match()
@@ -128,7 +125,7 @@ class GameEngineTests(unittest.TestCase):
         self.assertEqual(match.phase, FINISHED)
 
         _, event, data = self.events[-1]
-        self.assertEqual(event, "game_finished")
+        self.assertEqual(event, "leaderboard")
         self.assertEqual(
             data["leaderboard"],
             [
@@ -152,7 +149,7 @@ class GameEngineTests(unittest.TestCase):
 
         def record_event(room_id, event, data):
             events.append((room_id, event, data))
-            if event == "game_finished":
+            if event == "leaderboard":
                 finished.set()
 
         timed_question = [dict(QUESTIONS[0], time_limit=0.02)]
@@ -163,7 +160,7 @@ class GameEngineTests(unittest.TestCase):
         self.assertEqual(match.phase, FINISHED)
         self.assertEqual(
             [event for _, event, _ in events],
-            ["game_started", "question_open", "question_closed", "game_finished"],
+            ["question", "question_result", "leaderboard"],
         )
 
     def test_ten_players_can_progress_in_two_independent_rooms(self):

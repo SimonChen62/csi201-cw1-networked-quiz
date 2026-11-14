@@ -1,0 +1,5 @@
+Networked Quiz Tournament | Type help for commands.
+Connecting to 127.0.0.1:45395 ...
+[CONNECTED] observer (observer)
+[DISCONNECTED] connection_closed
+PROCESS_EXIT=0

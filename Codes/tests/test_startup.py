@@ -15,10 +15,11 @@ import server
 
 
 class FakeServer:
-    def __init__(self, host, port, question_bank=None):
+    def __init__(self, host, port, question_bank=None, **callbacks):
         self.host = host
         self.port = port
         self.question_bank = question_bank
+        self.callbacks = callbacks
 
     def serve_forever(self):
         pass
@@ -41,8 +42,8 @@ class StartupTest(unittest.TestCase):
             return bank
 
         class RecordingServer(FakeServer):
-            def __init__(self, host, port, question_bank=None):
-                super().__init__(host, port, question_bank)
+            def __init__(self, host, port, question_bank=None, **callbacks):
+                super().__init__(host, port, question_bank, **callbacks)
                 servers.append(self)
 
             def serve_forever(self):
@@ -59,6 +60,8 @@ class StartupTest(unittest.TestCase):
         self.assertEqual(order, [("load", "questions.json"), ("listen", bank)])
         self.assertEqual(servers[0].host, "0.0.0.0")
         self.assertEqual(servers[0].port, 6123)
+        self.assertTrue(callable(servers[0].callbacks["request_handler"]))
+        self.assertTrue(callable(servers[0].callbacks["on_disconnect"]))
 
     def test_invalid_question_bank_prevents_server_from_starting(self):
         server_factory = mock.Mock()

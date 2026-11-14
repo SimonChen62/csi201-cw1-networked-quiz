@@ -1,0 +1,53 @@
+Networked Quiz Tournament | Type help for commands.
+Connecting to 127.0.0.1:33527 ...
+[CONNECTED] b4 (b4)
+[ROOM R2] quiz=python-networking state=WAITING host=b0
+  b0 | b0 | ready=False | score=0
+  b1 | b1 | ready=False | score=0
+  b2 | b2 | ready=False | score=0
+  b3 | b3 | ready=False | score=0
+  b4 | b4 | ready=False | score=0
+[ROOM R2] quiz=python-networking state=WAITING host=b0
+  b0 | b0 | ready=True | score=0
+  b1 | b1 | ready=False | score=0
+  b2 | b2 | ready=False | score=0
+  b3 | b3 | ready=False | score=0
+  b4 | b4 | ready=False | score=0
+[ROOM R2] quiz=python-networking state=WAITING host=b0
+  b0 | b0 | ready=True | score=0
+  b1 | b1 | ready=True | score=0
+  b2 | b2 | ready=False | score=0
+  b3 | b3 | ready=False | score=0
+  b4 | b4 | ready=False | score=0
+[ROOM R2] quiz=python-networking state=WAITING host=b0
+  b0 | b0 | ready=True | score=0
+  b1 | b1 | ready=True | score=0
+  b2 | b2 | ready=True | score=0
+  b3 | b3 | ready=False | score=0
+  b4 | b4 | ready=False | score=0
+[ROOM R2] quiz=python-networking state=WAITING host=b0
+  b0 | b0 | ready=True | score=0
+  b1 | b1 | ready=True | score=0
+  b2 | b2 | ready=True | score=0
+  b3 | b3 | ready=True | score=0
+  b4 | b4 | ready=False | score=0
+[ROOM R2] quiz=python-networking state=WAITING host=b0
+  b0 | b0 | ready=True | score=0
+  b1 | b1 | ready=True | score=0
+  b2 | b2 | ready=True | score=0
+  b3 | b3 | ready=True | score=0
+  b4 | b4 | ready=True | score=0
+[ROOM R2] quiz=python-networking state=WAITING host=b0
+  b0 | b0 | ready=True | score=0
+  b1 | b1 | ready=True | score=0
+  b2 | b2 | ready=True | score=0
+  b3 | b3 | ready=True | score=0
+  b4 | b4 | ready=True | score=0
+[QUESTION PYNET001] Which Python module provides raw TCP sockets?
+  A. socket
+  B. json
+  C. pathlib
+  D. signal
+Limit: 5 seconds | Points: 100
+Use: answer PYNET001 <A|B|C|D>
+PROCESS_EXIT=-9

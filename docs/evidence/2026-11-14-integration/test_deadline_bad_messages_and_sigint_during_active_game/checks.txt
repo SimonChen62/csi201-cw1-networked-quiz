@@ -1,0 +1,3 @@
+Deadline observed: 5.001s (configured 5s)
+Public catalog/question hide answers; malformed JSON/NaN/nested malformed JSON rejected.
+Missing answer scored zero; closed-question submission rejected; oversized peer isolated.

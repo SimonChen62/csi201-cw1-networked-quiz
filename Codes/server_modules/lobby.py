@@ -33,10 +33,8 @@ decisions, not as Specification requirements):
     * ``hello`` accepts 1-64 visible characters for both ``user_id`` and ``name``;
     * PLAYER lists are sorted by ``user_id``.
 
-Event names come from C's engine unchanged. C still emits the v2 names
-(``game_started`` / ``question_open`` / ``question_closed`` / ``game_finished``);
-per CW1 6.1 C changes them to ``question`` / ``question_result`` /
-``leaderboard``. B does not translate them here.
+Event names come from C's engine unchanged: ``question``, ``question_result``
+and ``leaderboard``. The CLI sends answers in the ``choice`` field.
 """
 
 import threading
@@ -110,6 +108,8 @@ class Lobby:
         self._by_session = {}     # session -> user_id
         self._rooms = {}          # room_id -> Room
         self._room_counter = 0
+        self._matches = {}
+        self._stopping = False
         self._min_players = max(MIN_PLAYERS, int(min_players))
 
         if engine is not None:
@@ -135,7 +135,10 @@ class Lobby:
         if not isinstance(message_type, str):
             return _error(request_id, "INVALID_MESSAGE", "type must be a string")
 
-        user_id = self._by_session.get(session)
+        with self._lock:
+            if self._stopping:
+                return _error(request_id, "SERVER_SHUTDOWN", "the server is stopping")
+            user_id = self._by_session.get(session)
         if user_id is None and message_type not in OPEN_COMMANDS:
             return _error(request_id, "NOT_AUTHENTICATED", "send hello before other commands")
 
@@ -180,6 +183,24 @@ class Lobby:
         for targets, event_name, data in events:
             self._send(targets, event_name, data)
 
+    def request_shutdown(self):
+        """Signal timers before the network closes, without waiting on sends."""
+        with self._lock:
+            self._stopping = True
+            matches = list(self._matches.values())
+        for match in matches:
+            self._engine.stop_match(match, join_timeout=0)
+
+    def shutdown(self):
+        """Join all created timers, including rooms emptied by disconnects."""
+        self.request_shutdown()
+        with self._lock:
+            matches = list(self._matches.values())
+        for match in matches:
+            self._engine.stop_match(match, join_timeout=2)
+        with self._lock:
+            self._matches.clear()
+
     # ------------------------------------------------------------------ events
     def _emit_event(self, room_id, event, data):
         """C's emitter: copy the recipient list, then send outside the lock."""
@@ -191,7 +212,11 @@ class Lobby:
     @staticmethod
     def _send(targets, event_name, data):
         for session in targets:
-            session.send_event(event_name, data)
+            try:
+                if not session.send_event(event_name, data):
+                    session.close()
+            except OSError:
+                session.close()
 
     # ------------------------------------------------------------------ helpers
     def _room_of(self, user_id):
@@ -206,7 +231,9 @@ class Lobby:
         if room.match is None:
             return room.state
         with room.lock:
-            return room.match.phase
+            # A reserved match must already refuse joins while start_match
+            # runs outside the lobby lock and publishes the first question.
+            return room.state if room.match.phase == WAITING else room.match.phase
 
     def _room_view(self, room):
         """Build the v3 ROOM object (players sorted by user_id)."""
@@ -276,6 +303,8 @@ class Lobby:
             return _error(request_id, "INVALID_MESSAGE", "name must be a non-empty string"), []
         display_name = raw_name.strip()
         user_id_new = raw_id.strip()
+        if raw_id != user_id_new or not raw_id.isprintable() or not raw_name.isprintable():
+            return _error(request_id, "INVALID_MESSAGE", "use printable identity fields; user_id must not have surrounding whitespace"), []
         if len(user_id_new) > MAX_IDENT_LENGTH or len(display_name) > MAX_IDENT_LENGTH:
             return (
                 _error(
@@ -324,6 +353,7 @@ class Lobby:
                     "player_count": len(room.players),
                 }
                 for room in self._rooms.values()
+                if self._room_state(room) == WAITING
             ]
         return _response(request_id, {"rooms": rooms}), []
 
@@ -421,6 +451,8 @@ class Lobby:
             return _error(request_id, "INTERNAL_ERROR", "game engine is not configured"), []
 
         with self._lock:
+            if self._stopping:
+                return _error(request_id, "SERVER_SHUTDOWN", "the server is stopping"), []
             room = self._rooms.get(room_id)
             if room is None:
                 return _error(request_id, "ROOM_NOT_FOUND", f"room {room_id!r} does not exist"), []
@@ -458,6 +490,16 @@ class Lobby:
             except ValueError as exc:
                 return _error(request_id, "INTERNAL_ERROR", f"cannot create a match: {exc}"), []
             room.match = match
+            room.state = RUNNING
+            # Finished/deleted rooms need not retain their dead timer workers.
+            self._matches = {
+                key: value for key, value in self._matches.items()
+                if value.phase != FINISHED and (
+                    getattr(value, "game_thread", None) is None
+                    or value.game_thread.is_alive()
+                )
+            }
+            self._matches[room.room_id] = match
 
         # start_match runs outside the lobby lock: it emits the first question, and
         # A's send_event must never happen while the user/room table is locked.
@@ -466,13 +508,15 @@ class Lobby:
             error = result.get("error") or {}
             with self._lock:
                 room.match = None
+                room.state = WAITING
+                events = [(self._targets(room), "room_update", self._room_view(room))]
             return (
                 _error(
                     request_id,
                     error.get("code", "INTERNAL_ERROR"),
                     error.get("message", "the engine refused to start"),
                 ),
-                [],
+                events,
             )
 
         with self._lock:

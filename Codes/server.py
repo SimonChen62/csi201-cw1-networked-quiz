@@ -5,6 +5,8 @@ import signal
 import socket
 import threading
 
+from server_modules.lobby import Lobby
+
 from protocol import (
     MessageTooLarge,
     ProtocolError,
@@ -134,6 +136,8 @@ class Server:
                     break
 
                 # Wrap the accepted socket in a session object.
+                # Bound a stalled peer's send/receive without an idle disconnect.
+                connection.settimeout(1.0)
                 session = ClientSession(connection, address)
                 self.start_client(session)
 
@@ -158,6 +162,8 @@ class Server:
             while not self.stop_event.is_set() and not session.closed.is_set():
                 try:
                     chunk = connection.recv(1024)
+                except socket.timeout:
+                    continue
                 except OSError:
                     break
                 if not chunk:
@@ -284,13 +290,22 @@ def main(argv=None, question_loader=None):
             print(f"题库加载或校验失败：{exc}", flush=True)
             return 1
 
-    server = Server(args.host, args.port, question_bank=question_bank)
+    lobby = Lobby(question_bank) if question_bank is not None else None
+    callbacks = {} if lobby is None else {
+        "request_handler": lobby.handle_request,
+        "on_disconnect": lobby.on_disconnect,
+    }
+    server = Server(args.host, args.port, question_bank=question_bank, **callbacks)
     # Request shutdown on Ctrl+C.
     signal.signal(signal.SIGINT, server.request_shutdown)
     try:
         server.serve_forever()
     finally:
+        if lobby is not None:
+            lobby.request_shutdown()
         server.shutdown()
+        if lobby is not None:
+            lobby.shutdown()
     return 0
 
 

@@ -14,6 +14,10 @@ import json
 MAX_MESSAGE_BYTES = 64 * 1024
 
 
+def _reject_constant(value):
+    raise ValueError(f"nonstandard JSON constant: {value}")
+
+
 class ProtocolError(ValueError):
     """Invalid protocol message, including UTF-8 or JSON errors."""
 
@@ -82,8 +86,8 @@ def decode_message(payload: bytes) -> dict[str, object]:
     if len(payload) > MAX_MESSAGE_BYTES:
         raise MessageTooLarge("message exceeds 64 KB")
     try:
-        message = json.loads(payload.decode("utf-8"))
-    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        message = json.loads(payload.decode("utf-8"), parse_constant=_reject_constant)
+    except (UnicodeDecodeError, ValueError, RecursionError) as exc:
         raise ProtocolError(f"invalid JSON message: {exc}") from exc
     if not isinstance(message, dict):
         raise ProtocolError("message must be a JSON object")

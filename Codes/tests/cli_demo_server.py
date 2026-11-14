@@ -115,12 +115,12 @@ class DemoSession:
             elif command == "answer":
                 if self.phase != "RUNNING" or time.monotonic() >= self.deadline:
                     error("QUESTION_CLOSED", "Question is closed")
-                elif request.get("question_id") != "DEMO-Q1" or request.get("answer") not in ("A", "B", "C", "D"):
+                elif request.get("question_id") != "DEMO-Q1" or request.get("choice") not in ("A", "B", "C", "D"):
                     error("INVALID_ANSWER", "Invalid question ID or option")
                 elif self.answer is not None:
                     error("DUPLICATE_ANSWER", "An answer was already accepted")
                 else:
-                    self.answer = request["answer"]
+                    self.answer = request["choice"]
                     ok({"accepted": True, "question_id": "DEMO-Q1"})
             elif command == "leave_room":
                 self.in_room = False

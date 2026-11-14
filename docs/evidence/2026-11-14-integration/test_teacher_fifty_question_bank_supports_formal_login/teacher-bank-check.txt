@@ -1,0 +1,16 @@
+Networked Quiz Tournament | Type help for commands.
+Connecting to 127.0.0.1:34357 ...
+[CONNECTED] teacher-bank-check (teacher-bank-check)
+[QUIZZES]
+  geography | Geography | 10 questions
+    10 single-answer multiple-choice questions on geography for acceptance testing.
+  history | History | 10 questions
+    10 single-answer multiple-choice questions on history for acceptance testing.
+  natural-science | Natural Science | 10 questions
+    10 single-answer multiple-choice questions on natural science for acceptance testing.
+  literature-arts | Literature and the Arts | 10 questions
+    10 single-answer multiple-choice questions on literature and the arts for acceptance testing.
+  math-logic | Mathematics and Logic | 10 questions
+    10 single-answer multiple-choice questions on mathematics and logic for acceptance testing.
+[DISCONNECTED] connection_closed
+PROCESS_EXIT=0

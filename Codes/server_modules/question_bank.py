@@ -37,9 +37,15 @@ MAX_OPTION_CHARS = 200
 _MISSING = object()
 
 
-def _visible_length(value):
-    """Count visible characters, ignoring whitespace and control characters."""
-    return sum(1 for char in value if char.isprintable() and not char.isspace())
+def _unicode_text(value, where):
+    try:
+        value.encode("utf-8")
+    except UnicodeEncodeError as exc:
+        raise _invalid(where, "text must contain valid Unicode") from exc
+
+
+def _reject_constant(value):
+    raise ValueError(f"nonstandard JSON constant: {value}")
 
 
 def _invalid(where, problem):
@@ -61,12 +67,15 @@ def _required(container, key, where):
 def _require_text(value, where, field_name, minimum, maximum):
     if not isinstance(value, str):
         raise _invalid(where, f"{field_name} must be a string, got {type(value).__name__}")
-    visible = _visible_length(value)
-    if visible < minimum or visible > maximum:
+    _unicode_text(value, where)
+    visible = len(value)
+    if visible < minimum or visible > maximum or (minimum and not value.strip()):
         raise _invalid(
             where,
             f"{field_name} must have {minimum}-{maximum} visible characters, got {visible}",
         )
+    if value and not value.isprintable():
+        raise _invalid(where, f"{field_name} must not contain control characters")
     return value
 
 
@@ -184,7 +193,8 @@ def load_question_bank(path):
             violates any schema constraint.
     """
     file_path = Path(path)
-    raw = file_path.read_bytes()  # OSError propagates unchanged
+    with file_path.open("rb") as source:
+        raw = source.read(MAX_FILE_BYTES + 1)  # Bound memory; OSError propagates.
 
     origin = str(path)
     if not raw:
@@ -195,18 +205,20 @@ def load_question_bank(path):
         )
 
     try:
-        text = raw.decode("utf-8")
+        text = raw.decode("utf-8-sig")
     except UnicodeDecodeError as exc:
         raise ValueError(
             f"{origin}: file is not valid UTF-8 ({exc.reason} at byte {exc.start})"
         ) from exc
 
     try:
-        payload = json.loads(text)
+        payload = json.loads(text, parse_constant=_reject_constant)
     except json.JSONDecodeError as exc:
         raise ValueError(
             f"{origin}: invalid JSON ({exc.msg} at line {exc.lineno} column {exc.colno})"
         ) from exc
+    except (ValueError, RecursionError) as exc:
+        raise ValueError(f"{origin}: invalid JSON ({exc})") from exc
 
     return _parse_bank(payload, origin)
 
@@ -302,7 +314,8 @@ def _parse_question(question_raw, where, question_ids):
         value = options[key]
         if not isinstance(value, str):
             raise _invalid(where, f"options[{key}] must be a string, got {type(value).__name__}")
-        if not value.strip() or len(value) > MAX_OPTION_CHARS:
+        _unicode_text(value, f"{where}.options[{key}]")
+        if not 1 <= len(value) <= MAX_OPTION_CHARS:
             raise _invalid(
                 where,
                 f"options[{key}] must have 1-{MAX_OPTION_CHARS} characters, got {len(value)}",

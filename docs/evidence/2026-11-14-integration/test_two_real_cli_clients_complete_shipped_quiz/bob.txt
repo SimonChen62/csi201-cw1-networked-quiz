@@ -1,0 +1,70 @@
+Networked Quiz Tournament | Type help for commands.
+Connecting to 127.0.0.1:42283 ...
+[CONNECTED] bob (bob)
+[ROOM R1] quiz=network-basics state=WAITING host=alice
+  alice | alice | ready=False | score=0
+  bob | bob | ready=False | score=0
+[ERROR] NOT_HOST: only the host may start the game
+[ROOM R1] quiz=network-basics state=WAITING host=alice
+  alice | alice | ready=True | score=0
+  bob | bob | ready=False | score=0
+[ROOM R1] quiz=network-basics state=WAITING host=alice
+  alice | alice | ready=True | score=0
+  bob | bob | ready=True | score=0
+[ROOM R1] quiz=network-basics state=WAITING host=alice
+  alice | alice | ready=True | score=0
+  bob | bob | ready=True | score=0
+[QUESTION NET001] Which transport protocol provides reliable byte-stream delivery?
+  A. UDP
+  B. TCP
+  C. ARP
+  D. ICMP
+Limit: 15 seconds | Points: 100
+Use: answer NET001 <A|B|C|D>
+[RESULT NET001] Correct: B | Your total: 0
+[QUESTION NET002] Which device forwards packets between IP networks?
+  A. Router
+  B. Hub
+  C. Repeater
+  D. Patch panel
+Limit: 15 seconds | Points: 100
+Use: answer NET002 <A|B|C|D>
+[ANSWER NET001] Submission accepted. Result follows when the question closes.
+[RESULT NET002] Correct: A | Your total: 0
+[QUESTION NET003] Which protocol maps a domain name to an IP address?
+  A. DHCP
+  B. HTTP
+  C. DNS
+  D. FTP
+Limit: 15 seconds | Points: 100
+Use: answer NET003 <A|B|C|D>
+[ANSWER NET002] Submission accepted. Result follows when the question closes.
+[RESULT NET003] Correct: C | Your total: 0
+[QUESTION NET004] How many bits are in an IPv4 address?
+  A. 16
+  B. 32
+  C. 64
+  D. 128
+Limit: 15 seconds | Points: 100
+Use: answer NET004 <A|B|C|D>
+[ANSWER NET003] Submission accepted. Result follows when the question closes.
+[RESULT NET004] Correct: B | Your total: 0
+[QUESTION NET005] Which layer provides end-to-end process communication?
+  A. Physical
+  B. Data link
+  C. Network
+  D. Transport
+Limit: 15 seconds | Points: 100
+Use: answer NET005 <A|B|C|D>
+[ANSWER NET004] Submission accepted. Result follows when the question closes.
+[RESULT NET005] Correct: D | Your total: 0
+[LEADERBOARD]
+  1. alice | 500
+  2. bob | 0
+Quiz finished. Use leave or quit.
+[ANSWER NET005] Submission accepted. Result follows when the question closes.
+[ROOM R1] quiz=network-basics state=FINISHED host=bob
+  bob | bob | ready=True | score=0
+[LOBBY] Left the room.
+Goodbye.
+PROCESS_EXIT=0

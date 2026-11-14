@@ -90,7 +90,7 @@ class ClientIntegrationRegressionTest(unittest.TestCase):
              "data": {"accepted": True}},
         ])
         state.set_question(question("q1"))
-        connection.send_request("answer", {"room_id": "r1", "question_id": "q1", "answer": "B"})
+        connection.send_request("answer", {"room_id": "r1", "question_id": "q1", "choice": "B"})
         snapshot = state.get_snapshot()
         self.assertEqual(snapshot["current_question"]["id"], "q2")
         self.assertFalse(snapshot["has_answered"])
@@ -113,7 +113,7 @@ class ClientIntegrationRegressionTest(unittest.TestCase):
         }])
         state.set_question(question())
         state.mark_answered("q1", "r1")
-        connection.send_request("answer", {"room_id": "r1", "question_id": "q1", "answer": "A"})
+        connection.send_request("answer", {"room_id": "r1", "question_id": "q1", "choice": "A"})
         self.assertTrue(state.get_snapshot()["has_answered"])
 
     def test_incomplete_question_event_is_rejected_before_reaching_ui(self):
@@ -158,7 +158,7 @@ class ClientStateBoundaryTest(unittest.TestCase):
             parse_command("answer B", self.state.get_snapshot())
         command, data = parse_command("answer q2 b", self.state.get_snapshot())
         self.assertEqual(command, "answer")
-        self.assertEqual(data, {"room_id": "r1", "question_id": "q2", "answer": "B"})
+        self.assertEqual(data, {"room_id": "r1", "question_id": "q2", "choice": "B"})
 
 
 if __name__ == "__main__":

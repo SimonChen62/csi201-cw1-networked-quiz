@@ -78,7 +78,7 @@ def parse_command(line, snapshot):
     answer = args[1].upper()
     if answer not in ("A", "B", "C", "D"):
         raise ValueError("Answer must be A, B, C or D.")
-    return "answer", {**data, "question_id": args[0], "answer": answer}
+    return "answer", {**data, "question_id": args[0], "choice": answer}
 
 
 class InputReader(threading.Thread):

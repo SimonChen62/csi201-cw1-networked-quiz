@@ -1,34 +1,28 @@
-# 网络层、题库、比赛引擎与客户端测试
+# 测试说明（2026-11-14）
 
-运行步骤、对接 API 和当前限制见 [Codes/README.md](../README.md)。
+在课程容器 Codes 目录执行 python3 -B -m unittest discover -s tests -v。本轮 145 项测试通过，用时 38.408 秒。详细运行命令见 [README.md](../README.md)。
 
-| 文件 | 检查/用途 |
-| --- | --- |
-| `server_temp_test.py` | 临时 echo 客户端；分别显示响应、错误、事件，事件不计作请求回复；不是 D/E 的正式客户端 |
-| `test_protocol.py` | UTF-8/JSON 编解码、换行分帧、不完整尾部、常见坏消息与超长帧 |
-| `test_server.py` | session 发送、编码失败、已关闭连接、响应与事件并发发送保持帧完整 |
-| `test_dispatch.py` | 交给自定义请求处理器、事件与回复共存、指定名单广播、失败连接隔离、临时客户端分类 |
-| `test_disconnect.py` | 网络失败关闭、编码失败保留连接、断线回调、重复关闭、等待回调完成和其他客户端继续工作 |
-| `test_startup.py` | 参数必填/互斥、假加载器先于监听、校验失败不启动、正式启动标志；不验证 B 的真实题库 schema |
-| `test_question_bank.py` | 新增 21 项：完整题库 schema、数量/长度/大小边界、UTF-8、ID 唯一性、扩展字段与文件顺序、两份真实题库、错误时不创建 socket、真实子进程加载 50 题并接受 TCP |
-| `test_game_engine.py` | C 的 7 项引擎测试：不提前泄漏答案、计时/判分、重复/迟到、断线玩家排名、两房间和十名玩家状态；使用内存对象，非十个客户端进程 |
-| `test_network.py` | 子进程和真实 TCP 测试；多请求、格式错误、两个客户端和十条同时建立的连接分别收到自己的回复 |
-| `test_connection.py` / `test_state.py` | 当前 13 项通信、分片/合并、响应/事件、超时/断线与状态测试；包括失败 response 和 v3 字段兼容 |
-| `test_client_regressions.py` | 已有 11 项 D/E 接入回归：错误匹配、pending 清理、超时、旧题确认、外房事件、快照和输入题号 |
-| `test_cli.py` | 已有 3 项真实子进程/TCP 客户端检查：脚本业务流程、输入空闲时的结果/断线、EOF 退出 |
-| `fake_server.py` | 测试夹具；本轮补齐拆分回复、事件与回复合并、主动断线模式；测试默认使用系统分配的空闲端口 |
-| `cli_demo_server.py` | 单客户端脚本对端，含模拟第二名玩家；仅供开发，不是 B/C 的实现或多人验收证据 |
+| 范围 | 文件 | 证据性质 |
+| --- | --- | --- |
+| 网络层 29 项 | test_protocol/server/dispatch/disconnect/startup/network.py | 编解码、分帧、发送、路由、关闭和真实 TCP；部分使用 lab-mode |
+| D 通信/状态 13 项 | test_connection.py、test_state.py | 请求、事件、分片、超时、状态隔离 |
+| 已有 D/E 14 项 | test_client_regressions.py、test_cli.py | 客户端回归、真实 CLI 连接脚本对端；不是整机验收 |
+| B 题库 31 项 | test_question_bank.py | typed 题库、schema、数量/类型/范围、公开目录 |
+| B 大厅 38 项 | test_lobby.py | 身份、房间、ready/host、退出；使用 StubEngine |
+| C 引擎 7 项 | test_game_engine.py | 计时、计分、拒绝重复/迟到、排名与状态隔离 |
+| 整合回归 8 项 | test_integration_regressions.py | 加载边界、校验先于 socket、开赛并发窗口、发送失败和计时器停止 |
+| 正式配对系统 5 项 | test_paired_system.py | 真实 server.py/client.py 子进程，详见下方 |
 
-2026-11-14 全部 **84 项测试通过**（10.569 秒）：网络层 29 项、D 通信/状态 13 项、已有 D/E 接入与 CLI 14 项、C 引擎 7 项、新题库 21 项。环境为按老师提供的 Dockerfile 构建的 `csi201-cw1:verify-20261112` / Python 3.12.16；见 [本轮验证记录](../../docs/evidence/2026-11-14-question-bank-validation.md) 和 [原始输出](../../docs/evidence/2026-11-14-question-bank-unittest.txt)。
+正式配对验收的五个场景：
 
-本轮首次全量检查有 2 项失败：`fake_server.py` 只回复 normal 模式，拆包/合并模式没有回复，导致登录超时。现已补齐对应行为；断线模式也改为真正关闭连接，并断言 `CONNECTION_LOST`，避免把等待超时当作断线通过。没有放宽原有拆包/事件断言。
+1. 默认原题库：两位真实 CLI 玩家完整比赛，检查重复登录、host/ready 门槛、重复答案、分数、排名和正常退出。
+2. 老师 questions_50.json：正式服务器加载，真实客户端登录并列出 5 套各 10 题。
+3. 十个真实 CLI 客户端：两房间完整比赛，题目、结果和成绩隔离，全部客户端正常退出。
+4. 另一次十客户端：一人意外终止后，两个房间的其余玩家继续比赛。
+5. 正式服务器配合诊断 TCP 对端：格式错误、NaN、嵌套坏 JSON、未知命令、答案保密、5 秒权威截止、缺答/旧题拒绝、超长帧隔离，以及活跃比赛中 SIGINT；真实 CLI 观察者自动退出。
 
-题库检查调用真实加载器，启动测试使用真实 `server.py --questions questions_50.json`。A 的部分网络测试仍使用 `--lab-mode`，CLI 使用脚本对端，C 使用内存中的玩家/房间。另有 [实际启动与 SIGINT 记录](../../docs/evidence/2026-11-14-question-bank-startup.txt)。这些证据不证明正式登录、房间、完整比赛、十客户端双房间和所有异常关闭流程已完成。
+第三/四/五项使用临时合法题库，将原题库的限时改成规范允许的 5 秒；原题库文件不改。第五项的恶意报文由 WirePeer 注入，不计作十客户端证据。process_support.py 只负责测试进程的 stdin/stdout、等待及清理。
 
-从项目根目录开发调试：
+设置 QUIZ_EVIDENCE_DIR 可保存每个场景的服务器/客户端原始日志和实际输入题库。清理时记录实际进程退出码；中途被测试主动 kill 的客户端保留非零退出记录，其他客户端和服务器必须正常退出。
 
-```powershell
-python -m unittest discover -s Codes/tests -v
-```
-
-老师 Docker 环境中的命令及挂载路径说明见上级 README。
+人工视频和组员实际多终端操作仍需完成。自动终端输入不能替代每位成员解释自己的实现。
