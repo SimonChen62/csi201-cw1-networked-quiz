@@ -1,0 +1,25 @@
+# 2026-11-14 成员 B 启动与题库校验原始输出
+# 环境：本机 Windows，宿主 Python 3.13.18，非考官镜像
+# 分支：feat/b-question-bank-lobby
+
+## B-01 合法题库自检
+
+$ python -m server_modules.question_bank questions.json
+network-basics: 5 questions
+python-networking: 5 questions
+exit code 0
+
+## B-02 正式启动（题库校验通过后监听）
+
+$ python server.py --host 127.0.0.1 --port 5068 --questions questions.json
+SERVER_READY 127.0.0.1 5068
+
+# 采集输出后手动停止进程；正式运行由 Ctrl+C 结束。
+
+## B-03 非法题库被拒（points 改为 5000）
+
+$ python -m server_modules.question_bank invalid_bank.json
+question bank rejected: C:\Users\14763\AppData\Local\Temp\report_read\invalid_bank.json: quizzes[0].questions[3]: points must be 1-1000, got 5000
+exit code 1
+
+# 退出码非零，未进入监听状态。

@@ -110,7 +110,10 @@ class Lobby:
         self._room_counter = 0
         self._matches = {}
         self._stopping = False
-        self._min_players = max(MIN_PLAYERS, int(min_players))
+        # Honour an explicit value below the default (single-player debugging,
+        # narrow tests); only 0 or negative falls back to the default.
+        requested = int(min_players)
+        self._min_players = requested if requested >= 1 else MIN_PLAYERS
 
         if engine is not None:
             self._engine = engine
@@ -286,12 +289,6 @@ class Lobby:
             return []
 
         return [(self._targets(room), "room_update", self._room_view(room))]
-
-    def _require_text_field(self, message, field_name, request_id):
-        value = message.get(field_name)
-        if not isinstance(value, str) or _visible_length(value) < 1:
-            raise _BadRequest(request_id, field_name, "must be a non-empty string")
-        return value
 
     # ------------------------------------------------------------------ commands
     def _hello(self, session, request_id, message, user_id):
@@ -576,15 +573,21 @@ class Lobby:
         return _response(request_id, {}), events
 
     def _quit(self, session, request_id, message, user_id):
-        # v3: the server only confirms; the client closes its own socket and A's
-        # disconnect callback performs the identity and room cleanup.
-        return _response(request_id, {"bye": True}), []
+        """Confirm and release the identity in the same step.
 
-
-class _BadRequest(Exception):
-    def __init__(self, request_id, field_name, problem):
-        super().__init__(f"{field_name} {problem}")
-        self.request_id = request_id
+        The client closes its socket after receiving this response, so cleanup cannot
+        wait for ``on_disconnect``: if it did, a client that reconnects with
+        the same ``user_id`` before the old socket is reaped would be told
+        ``DUPLICATE_USER``. ``on_disconnect`` remains the safety net for
+        ungraceful drops, and is idempotent because the identity is already
+        gone by then.
+        """
+        with self._lock:
+            self._by_session.pop(session, None)
+            self._users.pop(user_id, None)
+            room = self._room_of(user_id)
+            events = self._remove_player(room, user_id) if room is not None else []
+        return _response(request_id, {"bye": True}), events
 
 
 class _Conflict(Exception):
