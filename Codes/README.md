@@ -21,13 +21,13 @@ python3 client.py --server 127.0.0.1 --port 5000 --id u2 --name Bob
 
 合法题库完整校验且监听成功后输出 SERVER_READY 127.0.0.1 5000。题库无效时输出具体诊断、退出码 1，不监听。端口由参数指定；服务器的端口 0 仅供自动测试分配空闲端口。--lab-mode 是保留的 echo 开发模式，正式运行使用 --questions。
 
-本轮按用户确认的课程环境运行：Docker Desktop 4.99.0 / Engine 29.9.3；Python 3.12.16；本机镜像标签 csi201-cw1:verify-20261112。标签是本机名称，组员使用自己按同一课程环境准备的对应标签。
+2026-11-16 本机验证使用老师环境文件构建的 csi201-cw1:latest，容器内 Python 3.12.15。该标签是本机名称；评分时使用 Learning Mall 指定的镜像及标签。
 
 PowerShell 中先进入 Codes，再启动容器：
 
 ~~~powershell
 $codePath = (Get-Location).Path
-docker run --rm -it --name cw1-run --mount "type=bind,source=$codePath,target=/code,readonly" csi201-cw1:verify-20261112 server.py --host 127.0.0.1 --port 5000 --questions questions.json
+docker run --rm -it --name cw1-run --mount "type=bind,source=$codePath,target=/code,readonly" csi201-cw1:latest server.py --host 127.0.0.1 --port 5000 --questions questions.json
 ~~~
 
 分别在两个新终端运行：
@@ -104,7 +104,7 @@ python3 -B -m unittest discover -s tests -v
 
 ~~~powershell
 $codePath = (Get-Location).Path
-docker run --rm --network none --env PYTHONPYCACHEPREFIX=/tmp/test-pycache --mount "type=bind,source=$codePath,target=/code,readonly" csi201-cw1:verify-20261112 -X utf8 -B -m unittest discover -s tests -v
+docker run --rm --network none --env PYTHONPYCACHEPREFIX=/tmp/test-pycache --mount "type=bind,source=$codePath,target=/code,readonly" csi201-cw1:latest -X utf8 -B -m unittest discover -s tests -v
 ~~~
 
 2026-11-15 本轮 146 项全部通过（36.990 秒）。其中 test_paired_system.py 运行正式 server.py / client.py：原题库双人完整比赛、老师 50 题登录/目录、十客户端全程双房间、另一次十客户端中途断线隔离，以及诊断对端的限时/非法报文/关闭检查。5 秒限时实测 5.002 秒。所有控制输入由测试驱动写入真实客户端 stdin，不以假客户端替代十进程验收；异常报文另用诊断 TCP 对端注入。

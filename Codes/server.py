@@ -1,4 +1,4 @@
-"""阶段 9：网络发送失败关闭连接，并通过统一出口通知业务层。"""
+"""TCP server transport layer and clean shutdown handling."""
 
 import argparse
 import signal
@@ -17,7 +17,7 @@ from protocol import (
 
 
 def failure_response(request_id, code, message):
-    """失败与成功同构：都是 response，只有 ok 为假并带 error。"""
+    """Build the response envelope used for failed requests."""
     return {
         "type": "response",
         "request_id": request_id,
@@ -49,7 +49,7 @@ class ClientSession:
         try:
             payload = encode_message(response)
         except ProtocolError as exc:
-            print(f"无法编码响应：{exc}", flush=True)
+            print(f"Response encoding failed: {exc}", flush=True)
             return False
 
         try:
@@ -59,7 +59,7 @@ class ClientSession:
                     return False
                 self.connection.sendall(payload)
         except OSError as exc:
-            print(f"发送响应失败：{exc}", flush=True)
+            print(f"Response send failed: {exc}", flush=True)
             self.close()
             return False
         return True
@@ -97,7 +97,8 @@ class Server:
         self.host = host
         self.port = port
         self.listener = None
-        # Request handler provided by B/C; use echo by default.
+        # B/C supplies the business handler in formal mode. The fallback keeps
+        # the transport layer usable for low-level network tests.
         if request_handler is None:
             self.request_handler = self.handle_request
         else:
@@ -157,7 +158,6 @@ class Server:
     def handle_client(self, session):
         connection = session.connection
         try:
-            print(f"客户端已连接：{session.address}", flush=True)
             buffer = bytearray()
             while not self.stop_event.is_set() and not session.closed.is_set():
                 try:
@@ -196,8 +196,7 @@ class Server:
                 try:
                     self.on_disconnect(session)
                 except Exception as exc:
-                    print(f"业务断线清理失败：{exc}", flush=True)
-            print(f"客户端已断开：{session.address}", flush=True)
+                    print(f"Disconnect cleanup failed: {exc}", flush=True)
             with self.sessions_lock:
                 self.client_threads.discard(threading.current_thread())
 
@@ -264,15 +263,17 @@ class Server:
 
 
 def main(argv=None, question_loader=None):
-    parser = argparse.ArgumentParser(description="阶段 10：验证题库后启动 TCP 服务器")
+    parser = argparse.ArgumentParser(
+        description="Validate the question bank before starting the TCP server"
+    )
     parser.add_argument("--host", required=True)
     parser.add_argument("--port", type=int, required=True)
     mode = parser.add_mutually_exclusive_group(required=True)
-    mode.add_argument("--questions", help="题库 JSON 文件路径")
+    mode.add_argument("--questions", help="Path to the question-bank JSON file")
     mode.add_argument(
         "--lab-mode",
         action="store_true",
-        help="运行不读取题库的 echo 教学服务器。",
+        help="Run the transport-only server for development tests.",
     )
     args = parser.parse_args(argv)
 
@@ -285,9 +286,9 @@ def main(argv=None, question_loader=None):
                 question_loader = load_question_bank
             question_bank = question_loader(args.questions)
             if question_bank is None:
-                raise ValueError("题库加载函数没有返回已验证的题库")
+                raise ValueError("question-bank loader returned no validated bank")
         except (ImportError, OSError, ValueError) as exc:
-            print(f"题库加载或校验失败：{exc}", flush=True)
+            print(f"Question-bank validation failed: {exc}", flush=True)
             return 1
 
     lobby = Lobby(question_bank) if question_bank is not None else None

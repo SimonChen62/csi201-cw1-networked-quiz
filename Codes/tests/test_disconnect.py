@@ -1,4 +1,4 @@
-"""网络失败关闭、编码失败隔离与断线回调测试。"""
+"""Tests for network failure, encoding failure, and disconnect callbacks."""
 
 from pathlib import Path
 import socket
@@ -35,10 +35,10 @@ class DisconnectTest(unittest.TestCase):
         session, peer = self.make_session()
         self.assertFalse(session.send_event("demo", {"bad": object()}))
         self.assertFalse(session.closed.is_set())
-        self.assertTrue(session.send_event("demo", {"text": "正常"}))
+        self.assertTrue(session.send_event("demo", {"text": "normal"}))
         with peer.makefile("rb") as reader:
             self.assertEqual(decode_message(reader.readline()), {
-                "type": "event", "event": "demo", "data": {"text": "正常"},
+                "type": "event", "event": "demo", "data": {"text": "normal"},
             })
 
     def test_repeated_close_unblocks_reader_and_notifies_once_outside_lock(self):
@@ -70,7 +70,7 @@ class DisconnectTest(unittest.TestCase):
 
     def test_broadcast_network_failure_wakes_worker_and_notifies_business(self):
         session, peer = self.make_session()
-        # 只关闭发送方向：后续发送必然失败，接收方向仍可能阻塞。
+        # Closing only the write side forces the next send to fail while reads may block.
         session.connection.shutdown(socket.SHUT_WR)
         notices = []
         server = Server("127.0.0.1", 0, on_disconnect=notices.append)
@@ -118,7 +118,7 @@ class DisconnectTest(unittest.TestCase):
         second, second_peer = self.make_session()
 
         def broken_callback(session):
-            raise RuntimeError("模拟业务清理失败")
+            raise RuntimeError("simulated business cleanup failure")
 
         server = Server("127.0.0.1", 0, on_disconnect=broken_callback)
         first_worker = self.start_worker(server, first)
@@ -159,11 +159,11 @@ class DisconnectTest(unittest.TestCase):
         shutdown_thread = threading.Thread(target=server.shutdown)
         try:
             shutdown_thread.start()
-            self.assertTrue(callback_started.wait(timeout=2), "断线回调没有开始")
-            self.assertTrue(shutdown_thread.is_alive(), "shutdown 没有等待断线回调完成")
+            self.assertTrue(callback_started.wait(timeout=2), "disconnect callback did not start")
+            self.assertTrue(shutdown_thread.is_alive(), "shutdown did not wait for the disconnect callback")
             release_callback.set()
             shutdown_thread.join(timeout=3)
-            self.assertFalse(shutdown_thread.is_alive(), "shutdown 未能结束")
+            self.assertFalse(shutdown_thread.is_alive(), "shutdown did not finish")
             worker.join(timeout=1)
             self.assertFalse(worker.is_alive())
             self.assertEqual(server.client_threads, set())

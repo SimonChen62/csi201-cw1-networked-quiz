@@ -73,7 +73,7 @@ class FakeServer(threading.Thread):
             print(f"[FakeServer] Shutting down")
 
 if __name__ == "__main__":
-    # 直接运行此文件时，启动一个一直运行的服务器
+    # Start a persistent server when this file is run directly.
     server = FakeServer("normal", 5001)
     server.start()
     try:

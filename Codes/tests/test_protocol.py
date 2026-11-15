@@ -1,4 +1,4 @@
-"""阶段 4：JSON 换行协议的编解码和边界检查。"""
+"""Tests for JSON Lines encoding, decoding, and frame boundaries."""
 
 import sys
 from pathlib import Path
@@ -19,11 +19,11 @@ from protocol import (
 
 class ProtocolTest(unittest.TestCase):
     def test_json_round_trip_preserves_unicode_and_adds_newline(self):
-        message = {"type": "echo", "request_id": 7, "text": "你好"}
+        message = {"type": "echo", "request_id": 7, "text": "café"}
 
         encoded = encode_message(message)
 
-        self.assertEqual(encoded, '{"type":"echo","request_id":7,"text":"你好"}\n'.encode("utf-8"))
+        self.assertEqual(encoded, '{"type":"echo","request_id":7,"text":"café"}\n'.encode("utf-8"))
         self.assertEqual(decode_message(encoded[:-1]), message)
 
     def test_extractor_keeps_partial_line_and_reads_multiple_lines(self):

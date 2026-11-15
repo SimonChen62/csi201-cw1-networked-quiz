@@ -1,4 +1,4 @@
-"""服务端输出边界测试。"""
+"""Tests for server output and send boundaries."""
 
 import contextlib
 import io
@@ -34,7 +34,7 @@ class SendResponseTest(unittest.TestCase):
 
         self.assertFalse(sent)
         self.assertEqual(connection.sent, [])
-        self.assertIn("无法编码", output.getvalue())
+        self.assertIn("Response encoding failed", output.getvalue())
 
     def test_valid_response_is_encoded_and_sent(self):
         connection = FakeConnection()
@@ -58,7 +58,7 @@ class SendResponseTest(unittest.TestCase):
             peer.close()
 
     def test_concurrent_writers_keep_each_json_frame_intact(self):
-        # 强制把每次发送分成两段，给另一个线程抢写的机会。
+        # Split each send to let another thread attempt an interleaved write.
         class SplitWriteConnection:
             def __init__(self, connection):
                 self.connection = connection
@@ -110,7 +110,7 @@ class SendResponseTest(unittest.TestCase):
             try:
                 messages = [json.loads(line) for line in received.splitlines()]
             except json.JSONDecodeError as exc:
-                self.fail(f"并发发送破坏了 JSON 消息边界：{exc}")
+                self.fail(f"concurrent sends corrupted JSON message boundaries: {exc}")
             self.assertCountEqual(messages, [
                 {"type": "response", "text": "A" * 4096},
             ] * 8 + [

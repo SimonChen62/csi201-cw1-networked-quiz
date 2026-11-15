@@ -1,4 +1,4 @@
-"""服务端启动参数和题库先校验后监听测试。"""
+"""Tests for server startup arguments and pre-listen question-bank validation."""
 
 import contextlib
 import io

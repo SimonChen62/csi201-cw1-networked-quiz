@@ -1,4 +1,4 @@
-"""成员 A 的临时实验客户端，不是 D/E 负责的正式客户端。"""
+"""Temporary test client for A's experiments; not the official D/E client."""
 
 import argparse
 import json
@@ -17,23 +17,23 @@ def receive_replies(connection, expected_replies):
     while replies < expected_replies:
         chunk = connection.recv(1024)
         if not chunk:
-            raise RuntimeError("服务器在回复完所有消息前关闭了连接")
+            raise RuntimeError("server closed the connection before replying to every message")
         buffer.extend(chunk)
         for frame in extract_messages(buffer):
             message = decode_message(frame)
             text = json.dumps(message, ensure_ascii=False)
             if message.get("type") == "event":
-                print(f"收到事件：{text}")
+                print(f"Received event: {text}")
             elif message.get("type") == "response":
-                label = "收到响应" if message.get("ok") else "收到失败"
-                print(f"{label}：{text}")
+                label = "Received response" if message.get("ok") else "Received error"
+                print(f"{label}: {text}")
                 replies += 1
             else:
-                raise RuntimeError(f"未知的服务器消息类型：{message.get('type')}")
+                raise RuntimeError(f"unknown server message type: {message.get('type')}")
 
 
 def main():
-    parser = argparse.ArgumentParser(description="阶段 8：发送请求，区分回复和主动事件")
+    parser = argparse.ArgumentParser(description="Send requests and distinguish responses from events")
     parser.add_argument("--server", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=5000)
     parser.add_argument("--message", action="append")
@@ -50,7 +50,7 @@ def main():
             payload += b"{bad json}\n"
 
         for index, message in enumerate(messages, start=1):
-            print(f"发出请求：{{'type': 'echo', 'request_id': {index}, 'text': {message!r}}}")
+            print(f"Sent request: {{'type': 'echo', 'request_id': {index}, 'text': {message!r}}}")
         connection.sendall(payload)
         receive_replies(connection, len(messages) + int(args.send_malformed))
 

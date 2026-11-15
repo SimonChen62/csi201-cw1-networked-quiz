@@ -1,4 +1,4 @@
-"""请求交接、定向事件、广播及临时客户端分类测试。"""
+"""Tests for request routing, targeted events, broadcasts, and temporary clients."""
 
 import contextlib
 import io
@@ -22,7 +22,7 @@ def read_messages(peer, count):
     while len(messages) < count:
         chunk = peer.recv(8192)
         if not chunk:
-            raise AssertionError("连接在全部消息到达前关闭")
+            raise AssertionError("connection closed before all messages arrived")
         buffer.extend(chunk)
         messages.extend(decode_message(frame) for frame in extract_messages(buffer))
     return messages
@@ -40,7 +40,7 @@ class DispatchTest(unittest.TestCase):
 
         def handle_request(current_session, message):
             calls.append((current_session, message))
-            current_session.send_event("demo_notice", {"text": "服务器通知"})
+            current_session.send_event("demo_notice", {"text": "Server notification"})
             return {
                 "type": "response", "request_id": message["request_id"],
                 "ok": True, "data": {"handled": True},
@@ -56,7 +56,7 @@ class DispatchTest(unittest.TestCase):
             messages = read_messages(peer, 3)
             self.assertEqual(messages[0]["error"]["code"], "MALFORMED_MESSAGE")
             self.assertEqual(messages[1], {
-                "type": "event", "event": "demo_notice", "data": {"text": "服务器通知"},
+                "type": "event", "event": "demo_notice", "data": {"text": "Server notification"},
             })
             self.assertEqual(messages[2], {
                 "type": "response", "request_id": 7, "ok": True, "data": {"handled": True},
@@ -65,7 +65,7 @@ class DispatchTest(unittest.TestCase):
         finally:
             peer.close()
             worker.join(timeout=4)
-        self.assertFalse(worker.is_alive(), "客户端线程没有退出")
+        self.assertFalse(worker.is_alive(), "client worker did not exit")
         self.assertNotIn(session, server.sessions)
 
     def test_broadcast_only_targets_given_sessions_and_reports_failed_send(self):
@@ -77,7 +77,7 @@ class DispatchTest(unittest.TestCase):
             self.addCleanup(peer.close)
         sessions = [ClientSession(connection, ("local", index))
                     for index, (connection, _) in enumerate(pairs)]
-        pairs[0][0].close()  # 第一位发送失败，后面两位仍应收到；第四位不在目标房间。
+        pairs[0][0].close()  # The first send fails; the next two receive the event; the fourth is not a target.
         server = Server("127.0.0.1", 0)
         server.sessions.update(sessions)
 
@@ -105,7 +105,7 @@ class DispatchTest(unittest.TestCase):
             {"type": "response", "request_id": 2, "ok": False, "error": {"code": "UNKNOWN_COMMAND"}},
         ]
         peer.sendall(b"".join(encode_message(message) for message in messages))
-        # 如果错误地把 event 算作回复，客户端会提前返回，下面这个错误响应不会输出。
+        # Counting an event as a reply would return early and omit the error response.
         output = io.StringIO()
         class BytewiseReader:
             def recv(self, size):
@@ -115,10 +115,10 @@ class DispatchTest(unittest.TestCase):
             server_temp_test.receive_replies(BytewiseReader(), expected_replies=2)
         lines = output.getvalue().splitlines()
         self.assertEqual(len(lines), 3)
-        self.assertTrue(lines[0].startswith("收到事件："))
-        self.assertTrue(lines[1].startswith("收到响应："))
-        self.assertTrue(lines[2].startswith("收到失败："))
-        self.assertEqual(json.loads(lines[2].split("：", 1)[1]), messages[2])
+        self.assertTrue(lines[0].startswith("Received event: "))
+        self.assertTrue(lines[1].startswith("Received response: "))
+        self.assertTrue(lines[2].startswith("Received error: "))
+        self.assertEqual(json.loads(lines[2].split(": ", 1)[1]), messages[2])
 
 
 if __name__ == "__main__":

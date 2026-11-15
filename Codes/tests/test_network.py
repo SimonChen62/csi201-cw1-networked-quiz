@@ -1,4 +1,4 @@
-"""阶段 3：同一个 TCP 连接上连续发送多条消息。"""
+"""Tests for sending multiple messages over one TCP connection."""
 
 import os
 import json
@@ -76,7 +76,7 @@ class EchoTest(unittest.TestCase):
                 try:
                     ready = lines.get(timeout=5).strip()
                 except queue.Empty:
-                    self.fail("服务器没有在 5 秒内报告监听地址")
+                    self.fail("server did not report its listening address within 5 seconds")
                 self.assertTrue(ready.startswith("LAB_LISTENING "), ready)
                 _, host, port = ready.split()
                 client = subprocess.run(
