@@ -121,7 +121,11 @@ A complete two-player walkthrough:
 
 The default bank contains Networking Fundamentals and Python Networking. It meets the requirement for at least two quizzes with at least five questions each.
 
-The additional bank contains Geography, History, Natural Science, Literature and the Arts, and Mathematics and Logic. It was copied from the local supplied-environment folder `CSI201_CW1_Docker_Env/CSI201_CW1_Docker_Env/questions_50.json`. Content comparison on 2026-11-16 confirmed identical JSON; only line endings differ. This is a local provenance record, not confirmation of a Learning Mall download. The coursework does not require this particular filename; retain it because the included alternate-bank test uses it.
+The additional bank contains Geography, History, Natural Science, Literature and the Arts, and Mathematics and Logic. Content comparison on 2026-11-16 confirmed that it matches the file at the local path `CSI201_CW1_Docker_Env/CSI201_CW1_Docker_Env/questions_50.json`; only line endings differ. The publisher and original download source have not been independently verified. Do not describe it as an official or examiner-provided bank on this evidence alone.
+
+The task sheet requires a valid submitted `questions.json` containing at least two quizzes with five questions per quiz (Submission, page 8). It does not require `questions_50.json`. We include this additional file as relevant test data for alternate-bank loading, not as a compulsory course asset or a known examiner test bank. Keep its existing name because the included paired test refers to that path; renaming it requires updating the test and this guide. The examiner may select another schema-valid bank using `--questions` (Normative question-bank input format, page 3).
+
+In the Development Documentation, describe the default bank and validation in Data Design, and record the alternate-bank procedure and actual result in Verification and Validation. State that the alternate-bank check verifies startup, login, and catalogue metadata; it does not play all 50 questions. Cite the task sheet for the required schema and submission rules. Record the local file provenance accurately if discussing the additional data; do not attribute it to the examiner without source confirmation. This README is an operator guide and does not replace the required `Documentation/Development_Documentation.pdf`.
 
 To select that bank, stop the server and relaunch:
 

@@ -125,9 +125,9 @@ class PairedSystemTest(unittest.TestCase):
             self.assertEqual(client.process.wait(timeout=4), 0)
         self.stop_server()
 
-    def test_teacher_fifty_question_bank_supports_formal_login(self):
+    def test_alternate_fifty_question_bank_supports_formal_login(self):
         self.start_server(filename="questions_50.json")
-        client = self.client("teacher-bank-check")
+        client = self.client("alternate-bank-check")
         client.command("quizzes", "[QUIZZES]")
         for quiz in self.bank["quizzes"]:
             client.wait_for(f"{quiz['quiz_id']} | {quiz['title']} | 10 questions")
