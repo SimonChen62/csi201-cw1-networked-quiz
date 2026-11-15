@@ -1,121 +1,178 @@
-# Networked Quiz Tournament — 运行与提交说明
+# Networked Quiz Tournament
 
-2026-11-15 整合版本：基于 main@44cb8c0 和 B 分支@5dc1ed1，接通 A 网络层、B 题库/大厅、C 比赛引擎及 D/E 正式客户端。146 项测试通过，含真实客户端双人比赛、十客户端双房间、计时和异常关闭。全组人工复核、报告定稿和视频仍待完成。
+A command-line quiz system implemented with Python 3.12 standard-library modules and raw TCP sockets. The server owns identities, rooms, question timing, scoring, and the question bank. Clients receive quiz information over TCP; they do not open question-bank files.
 
-## 1. 环境和启动
+## 1. Environment and required launch commands
 
-运行要求：课程提供的 Docker 环境，Python 3.12，仅标准库、原生 TCP socket、纯命令行。无需 pip、数据库或外部服务。只有服务器读取题库，客户端不打开题库文件。以下命令从提交包的 Codes 目录执行。
+Run and verify the submission inside the examiner's Docker environment. No package installation, database, GUI, or network download is required. Run the following commands from the `Codes` directory mounted inside that environment.
 
-服务器：
+Server, in terminal 1:
 
-~~~bash
+```sh
 python3 server.py --host 127.0.0.1 --port 5000 --questions questions.json
-~~~
+```
 
-客户端（每位玩家开独立终端，使用不同 ID）：
+Clients, in separate terminals in the same container:
 
-~~~bash
-python3 client.py --server 127.0.0.1 --port 5000 --id u1 --name Alice
-python3 client.py --server 127.0.0.1 --port 5000 --id u2 --name Bob
-~~~
+```sh
+python3 client.py --server 127.0.0.1 --port 5000 --id alice --name Alice
+python3 client.py --server 127.0.0.1 --port 5000 --id bob --name Bob
+```
 
-合法题库完整校验且监听成功后输出 SERVER_READY 127.0.0.1 5000。题库无效时输出具体诊断、退出码 1，不监听。端口由参数指定；服务器的端口 0 仅供自动测试分配空闲端口。--lab-mode 是保留的 echo 开发模式，正式运行使用 --questions。
+| Argument | Meaning |
+| --- | --- |
+| Server `--host` | Local address on which the server binds |
+| Server/client `--port` | TCP port; both sides must use the same port |
+| Server `--questions` | Path to the JSON bank; relative paths are resolved from the working directory |
+| Client `--server` | Server address reachable from that client |
+| Client `--id` | Unique active user ID |
+| Client `--name` | Display name; quote names containing spaces |
 
-2026-11-16 本机验证使用老师环境文件构建的 csi201-cw1:latest，容器内 Python 3.12.15。该标签是本机名称；评分时使用 Learning Mall 指定的镜像及标签。
+All arguments shown above are required for normal operation. The example port is selectable, not hard-coded. Server port `0` is used only by automated tests to request a free port. The development-only `--lab-mode` option runs an echo transport without a bank; it is not the quiz application and cannot be combined with `--questions`.
 
-PowerShell 中先进入 Codes，再启动容器：
+Successful validation followed by successful binding/listening produces:
 
-~~~powershell
+```text
+SERVER_READY 127.0.0.1 5000
+```
+
+A missing, unreadable, empty, oversized, malformed, or schema-invalid bank produces a meaningful diagnostic and exit status 1 before any listening socket is created. Omitting required arguments produces an argparse usage error and exit status 2. A client reports `[CONNECTED]` after successful login.
+
+## 2. Windows PowerShell access to the course container
+
+This machine was verified on 2026-11-16 using the locally available `csi201-cw1:latest` image, built from the supplied environment files, with Python 3.12.15. Local image names are not a substitute for the image/tag specified on Learning Mall. Use the examiner's specified image for assessment.
+
+First change to the actual extracted `Codes` directory in PowerShell. Start the container shell:
+
+```powershell
 $codePath = (Get-Location).Path
-docker run --rm -it --name cw1-run --mount "type=bind,source=$codePath,target=/code,readonly" csi201-cw1:latest server.py --host 127.0.0.1 --port 5000 --questions questions.json
-~~~
+docker run --rm -it --name cw1-run --mount "type=bind,source=$codePath,target=/code,readonly" -w /code --entrypoint /bin/sh csi201-cw1:latest
+```
 
-分别在两个新终端运行：
+At the container's `#` prompt, run the server command from section 1. Keep that terminal open. In two new PowerShell terminals, run:
 
-~~~powershell
-docker exec -it cw1-run python3 client.py --server 127.0.0.1 --port 5000 --id u1 --name Alice
-docker exec -it cw1-run python3 client.py --server 127.0.0.1 --port 5000 --id u2 --name Bob
-~~~
+```powershell
+docker exec -it cw1-run python3 client.py --server 127.0.0.1 --port 5000 --id alice --name Alice
+docker exec -it cw1-run python3 client.py --server 127.0.0.1 --port 5000 --id bob --name Bob
+```
 
-客户端和服务器均在同一容器，用回环地址通信，不需要宿主机端口映射。老师镜像以 Python 为 ENTRYPOINT，docker run 的镜像名后不要重复加 python；docker exec 需要写解释器。跨容器部署时应给服务器绑定可达地址并提供相应网络配置，本轮证据仅覆盖同容器多进程。
+`docker run` creates the container once; `docker exec` starts additional processes in that existing container. If the name is already in use, use the existing running container or choose a different unused name consistently. Do not create another container for every player.
 
-## 2. CLI 命令摘要
+All processes above share one container's loopback network, so no host port mapping is needed. `127.0.0.1` in a different container or on Windows refers to a different network namespace. Cross-container deployment requires a reachable bind address and appropriate networking; it is outside this documented setup.
 
-| 命令 | 用途 |
+To stop, type `quit` in each client, press Ctrl+C in the server terminal, then type `exit` at the shell prompt. `--rm` removes the stopped container; it does not delete the mounted source files.
+
+## 3. Client command reference
+
+Type these commands at the client's `>` prompt, not in PowerShell or the container shell.
+
+| Command | Action |
 | --- | --- |
-| help | 显示帮助 |
-| quizzes / rooms | 列出测验 / 可加入的等待房间 |
-| create <quiz_id> | 为测验创建房间 |
-| join <room_id> | 加入等待房间 |
-| players | 刷新房间成员、房主、准备状态和分数 |
-| ready / ready off | 准备 / 取消准备 |
-| start | 房主请求开赛 |
-| answer <question_id> <A/B/C/D> | 提交明确题号的答案 |
-| score / status | 显示最近确认的分数 / 本地状态 |
-| leave | 离开房间 |
-| quit | 确认退出并关闭连接 |
+| `help` | Show the command reference |
+| `quizzes` | List public quiz metadata |
+| `rooms` | List joinable waiting rooms |
+| `create <quiz_id>` | Create a room and become its host |
+| `join <room_id>` | Join a waiting room |
+| `players` | Refresh participants, host, readiness, and scores |
+| `ready` / `ready off` | Set or clear readiness |
+| `start` | Ask to start; only the room host may do so |
+| `answer <question_id> <A/B/C/D>` | Submit an answer for the named open question |
+| `score` | Display the last server-confirmed scores |
+| `status` | Display local identity, room, and phase |
+| `leave` | Leave the current room |
+| `quit` | Release identity/seat and close the client |
 
-两人演练：Alice 执行 quizzes、create network-basics；Bob 执行 rooms、join R1（以实际房间号为准）；两人执行 ready；Alice 执行 start。每题出现后使用实际题号答题，例如 answer NET001 B。等待结果和排行榜后 leave / quit。
+A complete two-player walkthrough:
 
-## 3. 游戏规则和假设
+1. Alice types `quizzes`, then `create network-basics`.
+2. Note the returned room ID, such as `R1`; Bob types `rooms`, then `join R1`, using the actual ID.
+3. Both type `players` and `ready`. Confirm both players are ready.
+4. Alice, the creator/host, types `start`. Bob does not need to type it.
+5. Each client receives the question, four options, question ID, points, and time limit. Submit before the deadline, for example `answer NET001 B`. A letter alone is not a command.
+6. Wait for the result and next question. Repeat with each newly displayed ID. Correct answers are revealed only after closure.
+7. After the final `[LEADERBOARD]`, type `leave` to return to the lobby or `quit` to exit. Finished rooms cannot restart.
 
-- 活动 user_id 唯一；重复登录返回 DUPLICATE_USER，原用户继续工作。ID 不接受首尾空白；ID 和显示名为 1～64 个可打印字符。显示名可重复，身份以 user_id 和来源连接确定。
-- 每人至多处于一个房间；CLI 要求先 leave 再进入另一个房间。只有 WAITING 房间接受新玩家。
-- 至少两名玩家、所有当前玩家 ready，且请求者是房主，才可开赛。开赛登记与检查受到锁保护。
-- 房主离开后转给剩余 user_id 中字典序最小者；最后一人离开时删除房间。FINISHED 房间不能重开，离开后创建新房间。
-- 按题库顺序发题；每个房间独立计时、保存答案和分数。服务器以单调时钟为准，到期或所有仍在线玩家已答题时关题。
-- 每题只接受每名玩家第一次、当前题号、截止前的合法答案；答对加题目 points，答错或未答为 0；重复、迟到或旧题提交被拒绝，不覆盖先前有效答案。
-- 关题前不公布正确答案。最终排名先按分数降序，再按 user_id 升序，名次为顺序编号。断线玩家保留已得分并留在排行榜。
-- quit、EOF、客户端 Ctrl+C 都关闭连接；服务器 Ctrl+C 停止监听、关闭连接并停止/等待比赛线程。客户端空闲时无需再按回车即可收到题目、结果或断线通知。
+## 4. Rules, validation, and assumptions
 
-## 4. 题库和服务端接口
+- Active user IDs are unique; duplicate login returns `DUPLICATE_USER` and leaves the original client connected. IDs must contain 1-64 printable characters with no surrounding whitespace. Names are trimmed, nonblank, and at most 64 printable characters; names may repeat.
+- A player belongs to at most one room. The CLI requires leaving before creating or joining another. Only waiting rooms accept new players.
+- The host can start only when at least two players are present and every current player is ready. These checks and the start reservation are synchronized.
+- If the host leaves, the remaining user ID that sorts first becomes host. Empty rooms are deleted. Finished rooms remain non-joinable until their players leave.
+- Each room owns separate question state, deadlines, answers, and scores. Questions follow bank order. The server uses a monotonic clock and closes each question at its deadline or after all remaining active players have answered.
+- Only the first valid, current-question answer received before the deadline is accepted. Correct answers add that question's `points`; wrong or missing answers add zero. Duplicate, late, or stale submissions are rejected without changing an accepted answer.
+- Rankings sort by descending score, then ascending user ID. Ranks are sequential. Disconnected players retain earned scores in the final leaderboard.
+- The complete bank is validated before listening: UTF-8 JSON object, maximum 1,048,576 bytes, integer `schema_version=1`, required fields, array bounds, ID format/uniqueness, text limits, exact A/B/C/D options, answer, time limits, and points. Booleans/floats are not integer fields. An initial UTF-8 BOM is accepted. Extra members are ignored except extra option keys.
+- Public catalogues expose quiz ID, title, description, and question count, not question text/options/answers. Open-question events omit the answer.
+- Ctrl+C stops the server, closes connections, and stops/waits for match timers. Clients also exit on EOF, Ctrl+C, or remote closure, including while waiting for keyboard input.
 
-questions.json 为最终默认数据（2 套 × 5 题），符合至少两套、每套至少五题的要求；questions_50.json 保留老师提供的 5 套 × 10 题原文件，可通过 --questions questions_50.json 选择。
+## 5. Included files and question banks
 
-load_question_bank(path) 返回 B 的 QuestionBank 对象；bank.quizzes 保持文件顺序，bank.get_quiz(id) 查找测验，bank.public_list() 只提供公开目录。quiz.question_payloads() 为比赛生成含答案的副本，只能用于服务端；不要直接发给客户端。
-
-完整校验文件及所有测验/题目：UTF-8（支持初始 BOM）、顶层和必填字段、整数 schema_version=1、数组数量、ID 格式与唯一性、文本/选项长度、ABCD、时间和分值。整数不接受布尔值或浮点数。文件大小上限按 1,048,576 字节解释，读取量有上限；标题/描述/题目按字符数检查，必填文本非空白且不含控制字符；选项按 1～200 字符检查。除 options 的精确键外允许并忽略扩展成员。错误抛 OSError 或 ValueError，在创建监听 socket 前处理。
-
-正式 main 创建 Lobby(bank)，将 handle_request 和 on_disconnect 传给 Server。Lobby 向 GameEngine 提供房间锁、玩家快照和房间事件发送函数；停服先通知计时器停止，再关闭网络及清理会话，最后等待计时线程。
-
-## 5. 协议与模块
-
-实际消息目录、例子、线程关系及错误码见同目录 [PROTOCOL.md](PROTOCOL.md)。请求/事件字段已统一为 v3 实现；这是当前实现记录，仍需全组人工评审，不表示已代替成员确认。
-
-| 文件/目录 | 职责 |
+| File/directory | Purpose |
 | --- | --- |
-| server.py / protocol.py | 原生 TCP、JSON Lines、连接、发送锁、分发与关闭 |
-| server_modules/question_bank.py | 加载器、QuestionBank/Quiz/Question、公开目录 |
-| server_modules/lobby.py | 身份、房间、ready/host、业务路由和生命周期 |
-| server_modules/game_engine.py / scoring.py | 单房间计时、答案、结算和排名 |
-| client.py / client_modules/cli.py | 参数、输入/输出、菜单和异步请求工作线程 |
-| client_modules/connection.py / state.py | 唯一网络接收线程、请求匹配、事件和线程安全状态 |
-| tests/ | 模块、回归、真实多进程验收和测试专用对端 |
+| `server.py`, `protocol.py` | TCP sessions, worker threads, JSON Lines framing, sends, dispatch, and shutdown |
+| `server_modules/question_bank.py` | Complete bank loading and typed question/quiz objects |
+| `server_modules/lobby.py` | Identities, rooms, host/readiness rules, routing, and business cleanup |
+| `server_modules/game_engine.py`, `scoring.py` | Per-room timing, answer acceptance, scoring, and ranking |
+| `client.py`, `client_modules/` | CLI, connection/request matching, events, and synchronized local state |
+| `questions.json` | Default development bank: two quizzes with five questions each |
+| `questions_50.json` | Additional bank: five quizzes with ten questions each; a paired test depends on it |
+| `PROTOCOL.md` | Implemented wire fields, events, error codes, locks, and lifecycle |
+| `tests/` | Automated tests and their supporting peers/process tools |
 
-## 6. 测试和证据
+The default bank contains Networking Fundamentals and Python Networking. It meets the requirement for at least two quizzes with at least five questions each.
 
-在课程容器内 Codes 目录运行：
+The additional bank contains Geography, History, Natural Science, Literature and the Arts, and Mathematics and Logic. It was copied from the local supplied-environment folder `CSI201_CW1_Docker_Env/CSI201_CW1_Docker_Env/questions_50.json`. Content comparison on 2026-11-16 confirmed identical JSON; only line endings differ. This is a local provenance record, not confirmation of a Learning Mall download. The coursework does not require this particular filename; retain it because the included alternate-bank test uses it.
 
-~~~bash
+To select that bank, stop the server and relaunch:
+
+```sh
+python3 server.py --host 127.0.0.1 --port 5000 --questions questions_50.json
+```
+
+Only the selected file is loaded. There is no automatic fallback or combined bank. Clients keep the same launch commands and obtain the selected catalogue through `quizzes`.
+
+## 6. Verification: what the 146 tests mean
+
+The number is the count of Python unittest test methods in this project, not a coursework requirement or a count of manual actions. A method may perform multiple assertions/subcases. Module tests use controlled objects or scripted peers; the five paired-system methods launch the actual submitted server and client processes. These provide different kinds of evidence.
+
+Run all tests from `Codes` inside the course container, before starting a manual server or after stopping it:
+
+```sh
 python3 -B -m unittest discover -s tests -v
-~~~
+```
 
-从宿主 PowerShell 的 Codes 目录运行同一套测试：
+The test harness starts and stops its own servers on available ports. The normal client never reads a bank; the test harness reads expected answers to check scores. See [tests/README.md](tests/README.md) for the per-file count, specific paired scenarios, and individual commands.
 
-~~~powershell
-$codePath = (Get-Location).Path
-docker run --rm --network none --env PYTHONPYCACHEPREFIX=/tmp/test-pycache --mount "type=bind,source=$codePath,target=/code,readonly" csi201-cw1:latest -X utf8 -B -m unittest discover -s tests -v
-~~~
+| Requirement | Relevant checks |
+| --- | --- |
+| Task 1: startup and bank validation | `test_question_bank.py`, `test_startup.py`, bank cases in `test_integration_regressions.py` |
+| Task 2: identity and connection | `test_lobby.py`, `test_connection.py`, duplicate login in `test_paired_system.py` |
+| Task 3: catalogue and rooms | `test_lobby.py` and the two-player paired workflow |
+| Task 4: questions, timing, scores, leaderboard | `test_game_engine.py` and paired match/deadline scenarios |
+| Task 5: at least ten clients and two independent rooms | Both ten-real-CLI-client methods in `test_paired_system.py` |
+| Task 6: failure isolation and shutdown | Network/protocol/disconnect/client regressions and the paired malformed-input/SIGINT scenario |
 
-2026-11-15 本轮 146 项全部通过（36.990 秒）。其中 test_paired_system.py 运行正式 server.py / client.py：原题库双人完整比赛、老师 50 题登录/目录、十客户端全程双房间、另一次十客户端中途断线隔离，以及诊断对端的限时/非法报文/关闭检查。5 秒限时实测 5.002 秒。所有控制输入由测试驱动写入真实客户端 stdin，不以假客户端替代十进程验收；异常报文另用诊断 TCP 对端注入。
+Each verbose result ending in `ok` passed. The final successful summary is `Ran 146 tests ... OK` with process exit status 0. `FAIL` means an assertion failed; `ERROR` means a test could not complete; either produces a nonzero status and needs investigation.
 
-测试默认写临时目录；设置 QUIZ_EVIDENCE_DIR 可保存实际终端日志和该次题库。并发与超时场景使用基于默认题库生成、每题 5 秒的合法临时数据；双人场景直接使用未改动的 questions.json，50 题场景使用原 questions_50.json。仓库 docs/evidence 保存日志；最终报告应选取必要结果，不把开发目录全部打包。
+Some failure-handling tests deliberately print `Response encoding failed`, `Broken pipe`, or `simulated business cleanup failure`. Those are injected conditions, not the test verdict. Read the corresponding `ok` and final summary. A test method with `error` or `failure` in its name is not itself a failed result.
 
-## 7. 已知限制与提交注意
+For persistent paired transcripts, choose a writable directory in the container:
 
-- 无 GUI、账户密码、TLS、数据库、自动重连或断线恢复；用于课程可信测试网络。题库里的答案在服务器内存中，不发送到活动题目中。
-- 请求默认超时 5 秒，超时表示结果未知，不自动重试状态变更操作。可用 players/rooms 刷新；失去连接需重新启动客户端。
-- 接收帧上限 64 KiB；每个已接受 socket 的阻塞操作限时 1 秒，空闲接收超时继续等待，发送超时关闭该连接。没有全局连接配额或完整防滥用机制。
-- 房间列表只列可加入的 WAITING 房间。并发成员变动时可用 players 刷新最新视图。CLI 显示限时，不逐秒刷新倒计时。
-- 自动验收使用 Linux 容器中的回环网络和进程信号；人工多终端体验、全员讲解视频及报告审核仍需完成。
-- 最终 ZIP 必须包含 Codes 和 Documentation/Development_Documentation.pdf。不要放入 Dockerfile、docker-compose.yml、镜像、.git、缓存、虚拟环境、IDE 配置、__MACOSX/.DS_Store 或无关文件。README/PROTOCOL 和测试依赖模块应保留。
+```sh
+QUIZ_EVIDENCE_DIR=/tmp/quiz-evidence python3 -B -m unittest discover -s tests -p test_paired_system.py -v
+```
+
+Default runs use temporary files. Evidence output includes per-process transcripts, actual banks, and exit codes. Automated checks do not replace a manual demonstration, the required team video, or review of the final report.
+
+## 7. Limitations and final packaging
+
+- No passwords, TLS, database, reconnect/resume, or persistent results. Use a trusted course test network.
+- Requests normally time out after five seconds. Timeout means the outcome is unknown, so state-changing requests are not retried automatically. Use `players`/`rooms` to refresh, or restart a disconnected client.
+- JSON frames are limited to 64 KiB. Accepted sockets use a one-second operation timeout; idle reads keep waiting, while failed sends close the affected connection.
+- No global connection quota or complete hostile-load protection is implemented. Tests cover specific scenarios, not all schedules or arbitrary loads.
+- The CLI prints the time limit but has no continuously refreshed countdown. Only waiting rooms appear in `rooms`.
+- Keep the test helper files and `questions_50.json` with the tests. `fake_server.py`, `cli_demo_server.py`, and `server_temp_test.py` are deliberate test peers, not alternative assessed entry points.
+
+The final ZIP must contain `Codes/` and `Documentation/Development_Documentation.pdf` as sibling directories. Confirm the final archive name and video submission instructions on Learning Mall. Exclude Dockerfiles, Compose files, images, virtual environments, caches/`*.pyc`, IDE files, `.git`, old exercise folders, and obsolete `server_modules/tem_server.py`. Preserve `README.md`, `PROTOCOL.md`, the runtime modules, and all test dependencies.
+
+Extract the assembled ZIP into a new directory and repeat the documented startup, paired manual workflow, and automated tests against that extracted copy. Open the final PDF and check the team video separately; successful code tests alone do not establish that those deliverables are complete.

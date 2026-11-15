@@ -1,10 +1,20 @@
-# 服务端模块接口（2026-11-14 整合版）
+# Server module interfaces
 
-- question_bank.py：B 的 QuestionBank/Quiz/Question 对象接口；E 在整合时保留有界读取、BOM、严格数值/Unicode/JSON 校验和真实启动回归。bank.public_list() 构造安全目录，bank.get_quiz(id) 返回测验，quiz.question_payloads() 生成仅供比赛引擎的含答案副本。
-- lobby.py：B 的身份、房间、ready/host、统一处理器；整合补充开赛预留状态、发送失败隔离、比赛跟踪和 request_shutdown()/shutdown()。
-- game_engine.py/scoring.py：C 的独立房间计时、答案、计分和排名；事件统一为 question/question_result/leaderboard，结算字段 answer；内部状态统一大写。
-- server.main() 组装 Lobby，并把 handle_request/on_disconnect 传给 Server；题库在任何监听 socket 之前验证。SIGINT 依次停止业务、关闭网络、等待计时器。
+The assessed server entry point is [server.py](../server.py). It validates the full bank, creates a Lobby, and supplies its request and disconnect callbacks to the TCP transport.
 
-create_business_handler(bank) 保留二元组 (request_handler, on_disconnect) 接口供已有测试使用。正式入口持有 Lobby 实例以调用停服方法。
+| Module | Responsibility and interface |
+| --- | --- |
+| `question_bank.py` | `load_question_bank(path)` returns a validated `QuestionBank`; file errors raise `OSError`, invalid content raises `ValueError` |
+| `lobby.py` | Identities, rooms, readiness, host permissions, routing, and match lifecycle |
+| `game_engine.py` | Per-room questions, monotonic deadlines, answer acceptance, and question/result/leaderboard events |
+| `scoring.py` | Correct-answer points and deterministic ranking |
 
-完整字段、错误码、锁顺序和生命周期见 [PROTOCOL.md](../PROTOCOL.md)，启动命令见 [README.md](../README.md)。贡献归属需由组员根据实际提交和评审确认。
+`bank.public_list()` returns safe catalogue metadata. `bank.get_quiz(quiz_id)` returns a quiz or None. `quiz.question_payloads()` creates question copies including answers for server-side engine use only; do not transmit those directly to clients.
+
+`Lobby.handle_request(session, message)` returns one response dictionary for the transport to send. `Lobby.on_disconnect(session)` removes the identity and room seat. `create_business_handler(bank)` exposes the same two callbacks for callers that need a tuple.
+
+The formal entry point retains the Lobby instance so shutdown can reject work and signal match timers, close the network and wait for connection cleanup, then wait for timer workers. Bank validation precedes all listener creation.
+
+The lobby lock protects the identity/session/room tables. Each match shares its room's reentrant lock. Network sends occur outside business locks. See [PROTOCOL.md](../PROTOCOL.md) for fields, errors, lock ordering, and lifecycle, and [README.md](../README.md) for operation.
+
+`tem_server.py` is an obsolete development experiment, is not imported by the assessed application or test suite, and must be excluded from the submission.

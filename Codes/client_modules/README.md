@@ -1,13 +1,15 @@
-# Client module ownership
+# Client module interfaces
 
-The assessed client entry point is `../client.py`. The client uses only the Python 3.12 standard library and raw TCP. See [E's CLI guide](../../docs/E_client_guide.md) and the [D/E interface table](../../CW1_D与E接口确定表.md).
+The assessed entry point is [client.py](../client.py). The client uses Python 3.12 standard-library modules and raw TCP; it does not open question-bank files.
 
-- `connection.py`: D, client socket and JSON-lines receive/send logic.
-- `state.py`: D, local user, room and question state.
-- `cli.py`: E, terminal input, menus and output.
+| Module | Responsibility |
+| --- | --- |
+| `connection.py` | Socket lifecycle, JSON Lines framing, request/response matching, and event delivery |
+| `state.py` | Synchronized identity, room, question, score, and leaderboard state |
+| `cli.py` | Argument-independent client runner, terminal input, command parsing, and output |
 
-E's `run_client()` constructs `ClientState` and `Connection`. A request worker calls the existing blocking `connect()/send_request()` methods; the UI loop reads `event_queue` and `get_snapshot()` while a separate input thread waits for keyboard input. The network reader updates state before publishing events. All user-facing output comes from the UI loop.
+`run_client()` creates `ClientState` and `Connection`. A request worker performs blocking connect/request calls. A separate input reader waits for terminal input while the CLI loop handles input, request results, and asynchronous events. One network reader updates state before publishing events. Snapshots are detached copies; the UI loop owns user-visible output.
 
-This branch includes E integration fixes in D-owned files: correlated error responses, pending-request cleanup, detached snapshots, stale question/room guards and shutdown notification. D's review is requested before merging. The business payloads in the interface table await B/C confirmation.
+Requests carry IDs, so an asynchronous event cannot be mistaken for a reply. State updates reject foreign-room events and stale question results. A timeout does not prove a request failed and does not trigger an automatic retry. Remote socket closure notifies the CLI even while standard input is idle.
 
-`tests/cli_demo_server.py` is a scripted single-client peer for development. A's echo client and this peer do not replace the real server or prove multi-room correctness.
+See the self-contained [operation guide](../README.md), [protocol](../PROTOCOL.md), and [test guide](../tests/README.md). Test peers are described in the test guide; they do not replace the formal server or establish full-system correctness.

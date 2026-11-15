@@ -57,14 +57,14 @@ def temp_router(session, message):
     if not user_id:
         return failure_response(req_id, "NO_USER", "You must send hello first")
 
-    # --- 补全 UI 里的所有查询命令 ---
+    # --- UI query commands ---
     if req_type == "list_quizzes":
         return {"type": "response", "request_id": req_id, "ok": True, "data": {"quizzes": [{"quiz_id": "demo-quiz", "title": "Demo", "question_count": 1}]}}
     
     if req_type == "list_rooms":
         return {"type": "response", "request_id": req_id, "ok": True, "data": {"rooms": [{"room_id": "ROOM-1", "quiz_id": "demo-quiz", "state": "WAITING"}]}}
     
-    # --- 房间操作 ---
+    # --- Room operations ---
     if req_type == "create_room":
         room_id = "ROOM-1"
         room_data = {
@@ -82,7 +82,7 @@ def temp_router(session, message):
     if req_type == "inspect_room" or req_type == "ready":
         return {"type": "response", "request_id": req_id, "ok": True, "data": {"room": {"room_id": room_id_in, "quiz_id": "demo-quiz", "host_user_id": user_id, "state": "WAITING", "players": [{"user_id": user_id, "name": user_id, "ready": True, "score": 0}]}}}
 
-    # --- 开始游戏与答题 ---
+    # --- Starting the game and submitting answers ---
     if req_type == "start_game":
         with match_lock:
             match = active_matches.get(room_id_in)

@@ -1,6 +1,6 @@
 # Implemented application-layer protocol (v3 integration)
 
-Version: 2026-11-15. This records the implemented protocol and team-selected rules. The coursework appendix is informative; the compulsory question-bank schema remains authoritative. Group review of this implementation is still required.
+Version: 2026-11-16. This records the implemented protocol and team-selected rules. The coursework appendix is informative; the compulsory question-bank schema remains authoritative.
 
 ## 1. Transport and envelopes
 
